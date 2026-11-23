@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Planejamento Financeiro & Renda Passiva — Guia Interativo</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --surface-alt: #f8fafc;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --text-light: #64748b;
+      --primary: #0f766e;
+      --primary-dark: #115e59;
+      --primary-light: #ccfbf1;
+      --accent: #2563eb;
+      --accent-light: #dbeafe;
+      --warn: #b45309;
+      --warn-light: #fef3c7;
+      --danger: #b91c1c;
+      --danger-light: #fee2e2;
+      --shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    /* Tela de Login */
+    #login-overlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #0f172a 0%, #0f766e 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 9999;
+    }
+    .login-card {
+      background: var(--surface);
+      width: 100%;
+      max-width: 430px;
+      border-radius: 18px;
+      padding: 2rem;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    }
+    .login-card h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.45rem;
+      color: var(--text);
+    }
+    .login-card p {
+      margin: 0 0 1.25rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    .form-group { margin-bottom: 0.9rem; }
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.3rem;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    .form-group input:focus { border-color: var(--primary); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.65rem 1rem;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+    .btn-primary { background: var(--primary); color: #fff; width: 100%; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-outline {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover { background: var(--surface-alt); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      width: 100%;
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+    }
+    .btn-sm { padding: 0.4rem 0.7rem; font-size: 0.8rem; border-radius: 8px; }
+
+    /* Barra Superior do Usuário */
+    .topbar {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .badge-bcb {
+      background: rgba(20, 184, 166, 0.2);
+      color: #5eead4;
+      border: 1px solid rgba(94, 234, 212, 0.35);
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .topbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Barra de Controle Global */
+    .control-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.25rem;
+      box-shadow: var(--shadow);
+      z-index: 100;
+    }
+    .control-bar.sticky {
+      position: sticky;
+      top: 0;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+    .control-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 1.25rem;
+      align-items: end;
+    }
+    @media (max-width: 900px) {
+      .control-grid { grid-template-columns: 1fr; }
+    }
+    .ctrl-box {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.85rem 1rem;
+    }
+    .ctrl-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.45rem;
+    }
+    .ctrl-header label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--text-muted);
+    }
+    .money-input, .pct-input {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      border-radius: 8px;
+      padding: 0.3rem 0.6rem;
+      text-align: right;
+    }
+    .money-input { width: 170px; }
+    .pct-input { width: 90px; }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+    .presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.5rem;
+    }
+    .preset-btn {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .preset-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* Layout Principal */
+    main.container { padding-top: 1.5rem; padding-bottom: 3rem; }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 520px) { .kpi-grid { grid-template-columns: 1fr; } }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.15rem;
+      box-shadow: var(--shadow);
+    }
+    .kpi-card.highlight {
+      background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+      color: #fff;
+      border: none;
+    }
+    .kpi-title { font-size: 0.8rem; font-weight: 600; opacity: 0.85; }
+    .kpi-value { font-size: 1.5rem; font-weight: 800; margin: 0.3rem 0; }
+    .kpi-sub { font-size: 0.78rem; opacity: 0.85; }
+
+    .section-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+    .section-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 1.1rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.85rem;
+    }
+    .section-header h2 { margin: 0; font-size: 1.2rem; color: var(--text); }
+    .section-header p { margin: 0.2rem 0 0; font-size: 0.88rem; color: var(--text-muted); }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+    .chart-wrap {
+      position: relative;
+      height: 300px;
+      width: 100%;
+    }
+
+    /* Quadro de Informações-Chave Abaixo dos Gráficos */
+    .key-info-box {
+      margin-top: 1rem;
+      background: #f0fdfa;
+      border: 1px solid #99f6e4;
+      border-left: 4px solid var(--primary);
+      border-radius: 10px;
+      padding: 0.9rem 1.05rem;
+      font-size: 0.86rem;
+    }
+    .key-info-box h4 {
+      margin: 0 0 0.45rem;
+      font-size: 0.88rem;
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .key-info-box ul {
+      margin: 0 0 0.55rem;
+      padding-left: 1.15rem;
+      color: var(--text);
+    }
+    .key-info-box li { margin-bottom: 0.25rem; }
+    .one-liner {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      border: 1px dashed #5eead4;
+    }
+
+    /* Tabelas */
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.87rem;
+      text-align: left;
+    }
+    th {
+      background: var(--surface-alt);
+      color: var(--text-muted);
+      font-weight: 700;
+      padding: 0.65rem 0.75rem;
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+    td {
+      padding: 0.65rem 0.75rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    tr:hover td { background: #f8fafc; }
+    .tag {
+      display: inline-block;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .tag-green { background: #dcfce7; color: #166534; }
+    .tag-blue { background: #dbeafe; color: #1e40af; }
+    .tag-amber { background: #fef3c7; color: #92400e; }
+
+    /* Escada de Liquidez */
+    .ladder-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    @media (max-width: 700px) { .ladder-grid { grid-template-columns: 1fr; } }
+    .ladder-step {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.85rem;
+      background: var(--surface-alt);
+    }
+    .ladder-step strong { display: block; color: var(--primary-dark); font-size: 0.9rem; }
+    .ladder-step span { font-size: 0.8rem; color: var(--text-muted); }
+
+    /* Cabeçalho Exclusivo de Impressão / PDF */
+    #print-header { display: none; }
+    @media print {
+      body { background: #fff; }
+      #login-overlay, .topbar, .control-bar, .no-print { display: none !important; }
+      #print-header {
+        display: block;
+        border-bottom: 2px solid #0f766e;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      .section-card, .kpi-card {
+        box-shadow: none !important;
+        break-inside: avoid;
+        border: 1px solid #cbd5e1;
+      }
+      .kpi-card.highlight {
+        background: #f0fdfa !important;
+        color: #0f172a !important;
+        border: 2px solid #0f766e !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TELA DE LOGIN -->
+  <div id="login-overlay">
+    <div class="login-card">
+      <h1 id="auth-title">Acesso ao Planejamento</h1>
+      <p id="auth-subtitle">Entre para salvar seus cenários e simulações personalizadas.</p>
+
+      <div class="form-group">
+        <label for="auth-email">E-mail</label>
+        <input type="email" id="auth-email" placeholder="seuemail@exemplo.com" />
+      </div>
+      <div class="form-group">
+        <label for="auth-pass">Senha</label>
+        <input type="password" id="auth-pass" placeholder="Mínimo 4 caracteres" />
+      </div>
+
+      <button class="btn btn-primary" onclick="fazerLogin()">Entrar no Simulador</button>
+      <button class="btn btn-ghost" onclick="alternarModoAuth()" id="auth-toggle-btn">Não tem conta? Criar cadastro rápido</button>
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 1rem 0;" />
+      <button class="btn btn-outline" style="width: 100%;" onclick="entrarVisitante()">Continuar sem login (Modo Visitante)</button>
+    </div>
+  </div>
+
+  <!-- BARRA SUPERIOR -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span>Planejamento Financeiro &amp; Renda Passiva</span>
+      <span class="badge-bcb" id="bcb-status">Buscando taxas BCB...</span>
+    </div>
+    <div class="topbar-actions">
+      <span style="font-size: 0.82rem; color: #cbd5e1;" id="user-display">Visitante</span>
+      <button class="btn btn-outline btn-sm" onclick="salvarCenario(1)">Salvar Cenário 1</button>
+      <button class="btn btn-outline btn-sm" onclick="carregarCenario(1)">Carregar 1</button>
+      <button class="btn btn-outline btn-sm" onclick="buscarTaxasBCB()">Atualizar BCB</button>
+      <button class="btn btn-primary btn-sm" style="width: auto;" onclick="gerarPDF()">Gerar PDF / Imprimir</button>
+      <button class="btn btn-outline btn-sm" onclick="sairConta()">Sair</button>
+    </div>
+  </header>
+
+  <!-- BARRA DE CONTROLE GLOBAL -->
+  <section class="control-bar sticky" id="control-bar">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+        <strong style="font-size: 0.85rem; color: var(--text-muted);">PARÂMETROS GLOBAIS DA SIMULAÇÃO</strong>
+        <button class="btn btn-outline btn-sm" onclick="toggleFixarBarra()" id="pin-btn">Desafixar Barra</button>
+      </div>
+
+      <div class="control-grid">
+        <!-- Capital Inicial -->
+        <div class="ctrl-box">
+          <div class="ctrl-header">
+            <label for="capital-input">Capital Inicial Investido</label>
+            <input type="text" id="capital-input" class="money-input" value="R$ 1.400.000,00" />
+          </div>
+          <input type="range" id="capital-slider" min="50000" max="5000000" step="10000" value="1400000" />
+          <div class="presets">
+            <button class="preset-btn" onclick="setCapital(300000)">R$ 300 mil</button>
+            <button class="preset-btn" onclick="setCapital(700000)">R$ 700 mil</button>
+            <button class="preset-btn" onclick="setCapital(1400000)">R$ 1,4 mi</button>
+            <button class="preset-btn" onclick="setCapital(2500000)">R$ 2,5 mi</button>
+            <button class="preset-btn" onclick="setCapital(5000000)">R$ 5 mi</button>
+          </div>
+        </div>
+
+        <!-- Selic / CDI -->
+        <div class="ctrl-box">
+          <div class="ctrl-header">
+            <label for="cdi-input">Selic / CDI (% a.a.)</label>
+            <input type="number" id="cdi-input" class="pct-input" step="0.25" min="2" max="25" value="12.00" />
+          </div>
+          <input type="range" id="cdi-slider" min="4" max="20" step="0.25" value="12" />
+          <div style="font-size: 0.74rem; color: var(--text-light); margin-top: 0.35rem;">Base para Tesouro, CDB e LCI/LCA</div>
+        </div>
+
+        <!-- Inflação IPCA -->
+        <div class="ctrl-box">
+          <div class="ctrl-header">
+            <label for="ipca-input">Inflação IPCA (% a.a.)</label>
+            <input type="number" id="ipca-input" class="pct-input" step="0.1" min="1" max="15" value="4.50" />
+          </div>
+          <input type="range" id="ipca-slider" min="1" max="12" step="0.1" value="4.5" />
+          <div style="font-size: 0.74rem; color: var(--text-light); margin-top: 0.35rem;">Define seu poder de compra real</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main class="container">
+    <!-- Cabeçalho exclusivo ao imprimir PDF -->
+    <div id="print-header">
+      <h1 style="margin: 0; color: #0f172a;">Relatório de Planejamento Financeiro &amp; Renda Passiva</h1>
+      <p id="print-meta" style="margin: 0.35rem 0 0; color: #475569; font-size: 0.9rem;"></p>
+    </div>
+
+    <!-- RESUMO EXECUTIVO (KPIs) -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-title">Patrimônio Inicial</div>
+        <div class="kpi-value" id="kpi-capital">R$ 1.400.000,00</div>
+        <div class="kpi-sub">100% em renda fixa conservadora</div>
+      </div>
+      <div class="kpi-card highlight">
+        <div class="kpi-title">Renda Mensal Líquida (Carteira Ideal)</div>
+        <div class="kpi-value" id="kpi-renda-mensal">R$ 12.515,00</div>
+        <div class="kpi-sub" id="kpi-taxa-liquida">Taxa líquida média de 10,73% a.a.</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Rendimento Líquido Anual</div>
+        <div class="kpi-value" id="kpi-renda-anual">R$ 150.180,00</div>
+        <div class="kpi-sub">Já descontando IR e taxa B3</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Saque Real Seguro (Protege Inflação)</div>
+        <div class="kpi-value" id="kpi-saque-real">R$ 6.720,00</div>
+        <div class="kpi-sub">Mantém o poder de compra para sempre</div>
+      </div>
+    </section>
+
+    <!-- SEÇÃO 1: CENÁRIOS & JUROS COMPOSTOS -->
+    <section class="section-card">
+      <div class="section-header">
+        <div>
+          <h2>1. Crescimento do Patrimônio (1 a 10 Anos com Reinvestimento)</h2>
+          <p>Comparação líquida entre Poupança, Tesouro Selic/CDI, Carteira Conservadora 3 Camadas e Carteira Agressiva (15% a.a.).</p>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <div class="chart-wrap">
+            <canvas id="chartCenarios"></canvas>
+          </div>
+          <div class="key-info-box">
+            <h4>Informações-Chave deste Gráfico</h4>
+            <ul>
+              <li><strong>Efeito Bola de Neve:</strong> Nos primeiros 2 anos a diferença parece pequena, mas entre o ano 5 e o ano 10 os juros compostos disparam.</li>
+              <li><strong>Poupança perde poder de compra:</strong> Rende cerca de 70% da Selic ou 0,5% ao mês + TR, ficando muito atrás de qualquer título atrelado ao CDI.</li>
+              <li><strong>Carteira Agressiva oscila:</strong> Projeta 15% a.a. no longo prazo, mas exige tolerar quedas temporárias na bolsa e em fundos imobiliários.</li>
+            </ul>
+            <div class="one-liner">
+              <strong>Como explicar em 1 frase:</strong> "Deixar o dinheiro na poupança faz você deixar centenas de milhares de reais na mesa ao longo de 10 anos por causa dos juros compostos."
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Prazo</th>
+                <th>Poupança</th>
+                <th>Tesouro / CDI</th>
+                <th>Carteira 3 Camadas</th>
+                <th>Agressiva (15%)</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-cenarios"></tbody>
+          </table>
+          <p style="font-size: 0.78rem; color: var(--text-light); margin-top: 0.75rem;">
+            *Considera IR regressivo de 17,5% no 1º ano e 15% a partir do 2º ano para aplicações tributadas. LCIs/LCAs são 100% isentas de IR.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEÇÃO 2: SIMULADOR DE APORTES & VIVER DE RENDA -->
+    <section class="section-card">
+      <div class="section-header">
+        <div>
+          <h2>2. Simulador de Aportes &amp; Viver de Renda (Retiradas Mensais)</h2>
+          <p>Simule se você quer acumular mais antes de parar ou começar a sacar hoje — com ou sem correção pela inflação.</p>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <div class="chart-wrap">
+            <canvas id="chartSimulador"></canvas>
+          </div>
+          <div class="key-info-box">
+            <h4>Informações-Chave deste Gráfico</h4>
+            <ul>
+              <li><strong>A "Pegadinha" da Inflação:</strong> Se você sacar 100% dos juros todos os meses, seu saldo continua igual no número, mas compra metade das coisas em ~15 anos.</li>
+              <li><strong>Saque Real Vitalício:</strong> Ao reinvestir a parte da inflação (IPCA), seu patrimônio cresce todo ano e seu saque mensal pode ser reajustado para sempre.</li>
+              <li><strong>IR nos primeiros 24 meses:</strong> Resgates nos primeiros 6 meses pagam 22,5% de IR sobre o lucro, caindo até 15% após 2 anos.</li>
+            </ul>
+            <div class="one-liner">
+              <strong>Como explicar em 1 frase:</strong> "Para viver de renda para sempre sem ficar mais pobre, você só pode gastar o que rende acima da inflação."
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="ctrl-box" style="margin-bottom: 0.85rem;">
+            <div class="ctrl-header">
+              <label for="saque-input">Saque Mensal Desejado (R$)</label>
+              <input type="text" id="saque-input" class="money-input" value="R$ 11.290,00" />
+            </div>
+            <input type="range" id="saque-slider" min="1000" max="40000" step="250" value="11290" />
+            <div style="margin-top: 0.6rem; display: flex; align-items: center; gap: 0.5rem;">
+              <input type="checkbox" id="corrigir-ipca" checked style="width: 16px; height: 16px; accent-color: var(--primary);" />
+              <label for="corrigir-ipca" style="font-size: 0.84rem; font-weight: 600; color: var(--text);">
+                Reajustar meu saque mensal pela inflação (IPCA) todo ano
+              </label>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.85rem;">
+            <div class="ctrl-box">
+              <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">APORTE MENSAL ANTES DE SACAR</label>
+              <input type="number" id="aporte-input" class="money-input" style="width: 100%; margin-top: 0.3rem;" value="0" min="0" step="500" />
+            </div>
+            <div class="ctrl-box">
+              <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">ANOS ACUMULANDO ANTES</label>
+              <input type="number" id="anos-acum-input" class="pct-input" style="width: 100%; margin-top: 0.3rem;" value="0" min="0" max="25" step="1" />
+            </div>
+          </div>
+
+          <div class="ctrl-box" style="margin-bottom: 0.85rem;">
+            <div class="ctrl-header">
+              <label for="horizonte-slider">Horizonte Total da Simulação: <span id="horizonte-val">20 anos</span></label>
+            </div>
+            <input type="range" id="horizonte-slider" min="5" max="35" step="1" value="20" />
+          </div>
+
+          <div id="resumo-simulador" style="background: var(--surface-alt); border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem; font-size: 0.86rem;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEÇÃO 3: COMPARATIVO RENDA FIXA + VITRINE AUTOMÁTICA LCI/LCA -->
+    <section class="section-card">
+      <div class="section-header">
+        <div>
+          <h2>3. Comparativo Renda Fixa &amp; Vitrine Automática de LCI/LCA</h2>
+          <p>Por que LCI e LCA superam o Tesouro Selic e CDBs tradicionais mesmo pagando um percentual menor do CDI.</p>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <div class="chart-wrap">
+            <canvas id="chartProdutos"></canvas>
+          </div>
+          <div class="key-info-box">
+            <h4>Informações-Chave deste Gráfico</h4>
+            <ul>
+              <li><strong>Regra dos 85% do CDI:</strong> Como CDBs pagam 15% de IR no longo prazo, qualquer LCI ou LCA acima de 85% do CDI já entrega mais dinheiro líquido no seu bolso.</li>
+              <li><strong>Taxa oculta no Tesouro Selic:</strong> A B3 cobra 0,20% ao ano sobre o valor que passa de R$ 10 mil no Tesouro Selic.</li>
+              <li><strong>Troca justa:</strong> Você abre mão da liquidez diária por 9 a 12 meses (carência) e ganha isenção total de Imposto de Renda.</li>
+            </ul>
+            <div class="one-liner">
+              <strong>Como explicar em 1 frase:</strong> "Uma LCI pagando 92% do CDI sem imposto coloca mais dinheiro no seu bolso do que um CDB pagando 108% do CDI."
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Produto</th>
+                <th>Taxa Bruta</th>
+                <th>Líquido / Ano</th>
+                <th>Líquido / Mês</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-produtos"></tbody>
+          </table>
+
+          <!-- VITRINE ALIMENTADA PELO ROBÔ DIÁRIO (ofertas_lci.json) -->
+          <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <strong style="font-size: 0.92rem; color: var(--text);">Vitrine Diária de LCI &amp; LCA (Robô GitHub)</strong>
+              <span class="tag tag-green" id="vitrine-data">Atualizado hoje</span>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Emissor</th>
+                  <th>Tipo</th>
+                  <th>Taxa</th>
+                  <th>Equiv. CDB</th>
+                  <th>Carência</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-vitrine-lci"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEÇÃO 4: CARTEIRA 3 CAMADAS & BLINDAGEM FGC -->
+    <section class="section-card">
+      <div class="section-header">
+        <div>
+          <h2>4. Carteira Conservadora em 3 Camadas &amp; Blindagem do FGC</h2>
+          <p>Divisão inteligente respeitando o teto de R$ 250 mil por banco e o limite global de R$ 1.000.000,00 do FGC por CPF.</p>
+        </div>
+        <span class="tag tag-blue" id="fgc-status-badge">100% Protegido (FGC + Tesouro)</span>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <div class="chart-wrap">
+            <canvas id="chartCarteira"></canvas>
+          </div>
+          <div class="key-info-box">
+            <h4>Informações-Chave deste Gráfico</h4>
+            <ul>
+              <li><strong>Regra de Ouro do FGC:</strong> O Fundo Garantidor cobre até R$ 250 mil por instituição, com teto global de R$ 1 milhão por CPF a cada 4 anos.</li>
+              <li><strong>Margem de Segurança:</strong> Aplicamos R$ 200 mil por banco para que tanto o valor inicial quanto os juros acumulados fiquem abaixo dos R$ 250 mil.</li>
+              <li><strong>Excedente no Tesouro Selic:</strong> Qualquer valor acima de R$ 1 milhão em títulos bancários vai automaticamente para o Tesouro Selic, garantido pelo Governo Federal.</li>
+            </ul>
+            <div class="one-liner">
+              <strong>Como explicar em 1 frase:</strong> "Nunca colocamos mais de R$ 200 mil no mesmo banco e mantemos sempre um colchão com resgate diário no Tesouro."
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 style="margin: 0 0 0.5rem; font-size: 1rem;">Escada de Liquidez (Quando o dinheiro fica livre)</h3>
+          <div class="ladder-grid" id="escada-liquidez"></div>
+
+          <h3 style="margin: 1.15rem 0 0.5rem; font-size: 1rem;">Divisão Prática por Instituição (Blindagem FGC)</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Instituição / Destino</th>
+                  <th>Produto</th>
+                  <th>Valor Alocado</th>
+                  <th>Garantia</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-fgc"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // =========================================================
+    // ESTADO GLOBAL DA APLICAÇÃO
+    // =========================================================
+    const state = {
+      capital: 1400000,
+      cdi: 12.0,
+      ipca: 4.5,
+      saque: 11290,
+      corrigirIpca: true,
+      aporte: 0,
+      anosAcum: 0,
+      horizonte: 20,
+      usuario: null,
+      modoCadastro: false
+    };
+
+    let charts = {};
+
+    // =========================================================
+    // FORMATAÇÃO MONETÁRIA & UTILITÁRIOS
+    // =========================================================
+    const fmtBRL = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const fmtPct = (v) => v.toFixed(2).replace('.', ',') + '%';
+
+    function parseBRL(str) {
+      const limpo = String(str).replace(/[^\d,]/g, '').replace(',', '.');
+      const num = parseFloat(limpo);
+      return isNaN(num) ? 0 : num;
+    }
+
+    // =========================================================
+    // AUTENTICAÇÃO E CENÁRIOS SALVOS (LOCALSTORAGE)
+    // =========================================================
+    function alternarModoAuth() {
+      state.modoCadastro = !state.modoCadastro;
+      document.getElementById('auth-title').textContent = state.modoCadastro ? 'Criar Nova Conta' : 'Acesso ao Planejamento';
+      document.getElementById('auth-subtitle').textContent = state.modoCadastro
+        ? 'Cadastre seu e-mail e senha para salvar seus cenários.'
+        : 'Entre para salvar seus cenários e simulações personalizadas.';
+      document.getElementById('auth-toggle-btn').textContent = state.modoCadastro
+        ? 'Já tem conta? Fazer login'
+        : 'Não tem conta? Criar cadastro rápido';
+    }
+
+    function fazerLogin() {
+      const email = document.getElementById('auth-email').value.trim().toLowerCase();
+      const pass = document.getElementById('auth-pass').value;
+      if (!email || !email.includes('@') || pass.length < 4) {
+        alert('Informe um e-mail válido e uma senha com pelo menos 4 caracteres.');
+        return;
+      }
+      const contas = JSON.parse(localStorage.getItem('pf_contas') || '{}');
+      if (state.modoCadastro) {
+        contas[email] = { pass };
+        localStorage.setItem('pf_contas', JSON.stringify(contas));
+      } else if (contas[email] && contas[email].pass !== pass) {
+        alert('Senha incorreta para este e-mail.');
+        return;
+      } else if (!contas[email]) {
+        contas[email] = { pass };
+        localStorage.setItem('pf_contas', JSON.stringify(contas));
+      }
+      state.usuario = email;
+      localStorage.setItem('pf_sessao_atual', email);
+      iniciarSessao();
+    }
+
+    function entrarVisitante() {
+      state.usuario = 'visitante';
+      iniciarSessao();
+    }
+
+    function sairConta() {
+      localStorage.removeItem('pf_sessao_atual');
+      document.getElementById('login-overlay').style.display = 'flex';
+    }
+
+    function iniciarSessao() {
+      document.getElementById('login-overlay').style.display = 'none';
+      document.getElementById('user-display').textContent =
+        state.usuario === 'visitante' ? 'Modo Visitante' : state.usuario;
+      carregarAutomatico();
+      atualizarTudo();
+    }
+
+    function salvarCenario(slot) {
+      const chave = `pf_cenario_${state.usuario || 'visitante'}_${slot}`;
+      localStorage.setItem(chave, JSON.stringify({
+        capital: state.capital,
+        cdi: state.cdi,
+        ipca: state.ipca,
+        saque: state.saque,
+        corrigirIpca: state.corrigirIpca,
+        aporte: state.aporte,
+        anosAcum: state.anosAcum,
+        horizonte: state.horizonte
+      }));
+      alert(`Cenário ${slot} salvo com sucesso!`);
+    }
+
+    function carregarCenario(slot) {
+      const chave = `pf_cenario_${state.usuario || 'visitante'}_${slot}`;
+      const salvo = JSON.parse(localStorage.getItem(chave) || 'null');
+      if (!salvo) {
+        alert(`Nenhum dado encontrado no Cenário ${slot}.`);
+        return;
+      }
+      Object.assign(state, salvo);
+      sincronizarInputs();
+      atualizarTudo();
+    }
+
+    function salvarAutomatico() {
+      localStorage.setItem(`pf_auto_${state.usuario || 'visitante'}`, JSON.stringify(state));
+    }
+
+    function carregarAutomatico() {
+      const salvo = JSON.parse(localStorage.getItem(`pf_auto_${state.usuario || 'visitante'}`) || 'null');
+      if (salvo) {
+        Object.assign(state, salvo);
+        sincronizarInputs();
+      }
+    }
+
+    // =========================================================
+    // BUSCA DE TAXAS OFICIAIS NO BANCO CENTRAL (API BCB)
+    // =========================================================
+    async function buscarTaxasBCB() {
+      const badge = document.getElementById('bcb-status');
+      badge.textContent = 'Consultando Banco Central...';
+      try {
+        const [resSelic, resIpca] = await Promise.all([
+          fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados/ultimos/1?formato=json'),
+          fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.13522/dados/ultimos/1?formato=json')
+        ]);
+        const dadosSelic = await resSelic.json();
+        const dadosIpca = await resIpca.json();
+
+        if (dadosSelic && dadosSelic[0] && dadosSelic[0].valor) {
+          state.cdi = parseFloat(dadosSelic[0].valor);
+        }
+        if (dadosIpca && dadosIpca[0] && dadosIpca[0].valor) {
+          state.ipca = parseFloat(dadosIpca[0].valor);
+        }
+        sincronizarInputs();
+        atualizarTudo();
+        badge.textContent = `BCB Oficial: Selic ${fmtPct(state.cdi)} | IPCA ${fmtPct(state.ipca)}`;
+      } catch (e) {
+        badge.textContent = `Base Manual: CDI ${fmtPct(state.cdi)} | IPCA ${fmtPct(state.ipca)}`;
+      }
+    }
+
+    // =========================================================
+    // CARREGAMENTO DA VITRINE LCI/LCA (ofertas_lci.json)
+    // =========================================================
+    async function carregarVitrineLCI() {
+      const tbody = document.getElementById('tabela-vitrine-lci');
+      const dataBadge = document.getElementById('vitrine-data');
+      const fallback = {
+        atualizado_em: 'Base Referência',
+        ofertas: [
+          { emissor: 'Banco Daycoval / ABC', tipo: 'LCA', taxa_cdi: 90.0, equivalente_cdb_cdi: 105.9, carencia: '9 meses' },
+          { emissor: 'BTG Pactual / Inter', tipo: 'LCI', taxa_cdi: 92.0, equivalente_cdb_cdi: 108.2, carencia: '12 meses' },
+          { emissor: 'Banco Pine / Bari', tipo: 'LCI', taxa_cdi: 94.5, equivalente_cdb_cdi: 111.2, carencia: '24 meses' }
+        ]
+      };
+
+      let dados = fallback;
+      try {
+        const resp = await fetch('./ofertas_lci.json?v=' + Date.now());
+        if (resp.ok) {
+          dados = await resp.json();
+        }
+      } catch (e) {}
+
+      dataBadge.textContent = dados.atualizado_em;
+      tbody.innerHTML = dados.ofertas.map(o => `
+        <tr>
+          <td><strong>${o.emissor}</strong></td>
+          <td><span class="tag tag-blue">${o.tipo}</span></td>
+          <td><strong style="color: #059669;">${o.taxa_cdi.toFixed(1).replace('.', ',')}% CDI</strong></td>
+          <td>${o.equivalente_cdb_cdi.toFixed(1).replace('.', ',')}% CDI</td>
+          <td>${o.carencia}</td>
+        </tr>
+      `).join('');
+    }
+
+    // =========================================================
+    // CONTROLES & EVENTOS
+    // =========================================================
+    function sincronizarInputs() {
+      document.getElementById('capital-input').value = fmtBRL(state.capital);
+      document.getElementById('capital-slider').value = Math.min(5000000, Math.max(50000, state.capital));
+      document.getElementById('cdi-input').value = state.cdi.toFixed(2);
+      document.getElementById('cdi-slider').value = state.cdi;
+      document.getElementById('ipca-input').value = state.ipca.toFixed(2);
+      document.getElementById('ipca-slider').value = state.ipca;
+      document.getElementById('saque-input').value = fmtBRL(state.saque);
+      document.getElementById('saque-slider').value = Math.min(40000, Math.max(1000, state.saque));
+      document.getElementById('corrigir-ipca').checked = state.corrigirIpca;
+      document.getElementById('aporte-input').value = state.aporte;
+      document.getElementById('anos-acum-input').value = state.anosAcum;
+      document.getElementById('horizonte-slider').value = state.horizonte;
+      document.getElementById('horizonte-val').textContent = `${state.horizonte} anos`;
+    }
+
+    function setCapital(val) {
+      state.capital = val;
+      sincronizarInputs();
+      atualizarTudo();
+    }
+
+    function toggleFixarBarra() {
+      const bar = document.getElementById('control-bar');
+      const btn = document.getElementById('pin-btn');
+      bar.classList.toggle('sticky');
+      btn.textContent = bar.classList.contains('sticky') ? 'Desafixar Barra' : 'Fixar Barra no Topo';
+    }
+
+    function gerarPDF() {
+      const agora = new Date().toLocaleString('pt-BR');
+      document.getElementById('print-meta').textContent =
+        `Gerado em ${agora} | Titular: ${state.usuario === 'visitante' ? 'Visitante' : state.usuario} | Capital: ${fmtBRL(state.capital)} | CDI: ${fmtPct(state.cdi)} | IPCA: ${fmtPct(state.ipca)}`;
+      window.print();
+    }
+
+    // =========================================================
+    // CÁLCULOS FINANCEIROS & ATUALIZAÇÃO DOS GRÁFICOS
+    // =========================================================
+    function calcularAlocacaoSegura(cap, cdiDec) {
+      // Limite global do FGC por CPF: R$ 1.000.000,00 em títulos bancários (LCI/LCA)
+      const alvoBancos = cap * 0.80;
+      const valorBancos = Math.min(1000000, alvoBancos);
+      const valorSelic = cap - valorBancos;
+
+      const valorLciCurto = valorBancos * 0.375; // ~30% do total quando <= 1.25M
+      const valorLciLongo = valorBancos * 0.625; // ~50% do total quando <= 1.25M
+
+      const custodiaB3 = valorSelic > 10000 ? (valorSelic - 10000) * 0.002 : 0;
+      const ganhoSelicLiq = valorSelic * cdiDec * 0.85 - custodiaB3;
+      const ganhoLciCurtoLiq = valorLciCurto * (cdiDec * 0.90);
+      const ganhoLciLongoLiq = valorLciLongo * (cdiDec * 0.93);
+
+      const totalLiqAnual = ganhoSelicLiq + ganhoLciCurtoLiq + ganhoLciLongoLiq;
+      const taxaLiqMedia = cap > 0 ? totalLiqAnual / cap : 0;
+
+      return {
+        valorSelic,
+        valorLciCurto,
+        valorLciLongo,
+        valorBancos,
+        totalLiqAnual,
+        rendaMensalLiq: totalLiqAnual / 12,
+        taxaLiqMedia
+      };
+    }
+
+    function atualizarTudo() {
+      salvarAutomatico();
+      const cap = state.capital;
+      const cdiDec = state.cdi / 100;
+      const ipcaDec = state.ipca / 100;
+      const poupDec = state.cdi > 8.5 ? 0.07 : cdiDec * 0.70;
+      const agrDec = cdiDec + 0.03; // Carteira agressiva ~3% acima do CDI
+
+      const aloc = calcularAlocacaoSegura(cap, cdiDec);
+
+      // Taxa real acima da inflação
+      const taxaReal = Math.max(0, (1 + aloc.taxaLiqMedia) / (1 + ipcaDec) - 1);
+      const saqueRealSeguro = (cap * taxaReal) / 12;
+
+      // Atualiza KPIs
+      document.getElementById('kpi-capital').textContent = fmtBRL(cap);
+      document.getElementById('kpi-renda-mensal').textContent = fmtBRL(aloc.rendaMensalLiq);
+      document.getElementById('kpi-taxa-liquida').textContent = `Taxa líquida média de ${fmtPct(aloc.taxaLiqMedia * 100)} a.a.`;
+      document.getElementById('kpi-renda-anual').textContent = fmtBRL(aloc.totalLiqAnual);
+      document.getElementById('kpi-saque-real').textContent = fmtBRL(saqueRealSeguro);
+
+      atualizarSecao1(cap, poupDec, cdiDec, aloc.taxaLiqMedia, agrDec);
+      atualizarSecao2(cap, aloc.taxaLiqMedia, ipcaDec, saqueRealSeguro);
+      atualizarSecao3(cap, cdiDec);
+      atualizarSecao4(aloc);
+    }
+
+    function atualizarSecao1(cap, poupDec, cdiDec, taxaCarteiraLiq, agrDec) {
+      const anos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+      const sPoup = [];
+      const sCdi = [];
+      const sCart = [];
+      const sAgr = [];
+
+      anos.forEach(t => {
+        const ir = t === 1 ? 0.175 : 0.15;
+        sPoup.push(cap * Math.pow(1 + poupDec, t));
+        const brutoCdi = cap * Math.pow(1 + cdiDec, t);
+        sCdi.push(cap + (brutoCdi - cap) * (1 - ir));
+        sCart.push(cap * Math.pow(1 + taxaCarteiraLiq, t));
+        const brutoAgr = cap * Math.pow(1 + agrDec, t);
+        sAgr.push(cap + (brutoAgr - cap) * (1 - ir));
+      });
+
+      const linhas = [1, 3, 5, 10].map(t => {
+        const i = t - 1;
+        return `
+          <tr>
+            <td><strong>${t} ${t === 1 ? 'Ano' : 'Anos'}</strong></td>
+            <td>${fmtBRL(sPoup[i])}</td>
+            <td>${fmtBRL(sCdi[i])}</td>
+            <td><strong style="color: #0f766e;">${fmtBRL(sCart[i])}</strong></td>
+            <td>${fmtBRL(sAgr[i])}</td>
+          </tr>
+        `;
+      }).join('');
+      document.getElementById('tabela-cenarios').innerHTML = linhas;
+
+      if (charts.cenarios) charts.cenarios.destroy();
+      charts.cenarios = new Chart(document.getElementById('chartCenarios'), {
+        type: 'line',
+        data: {
+          labels: anos.map(a => `Ano ${a}`),
+          datasets: [
+            { label: 'Poupança', data: sPoup, borderColor: '#94a3b8', borderDash: [5, 5], tension: 0.3 },
+            { label: 'Tesouro / CDI Líq.', data: sCdi, borderColor: '#3b82f6', tension: 0.3 },
+            { label: 'Carteira 3 Camadas', data: sCart, borderColor: '#0f766e', borderWidth: 3, tension: 0.3 },
+            { label: 'Agressiva (15% bruto)', data: sAgr, borderColor: '#f59e0b', tension: 0.3 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } },
+          scales: {
+            y: {
+              ticks: { callback: v => 'R$ ' + (v / 1000000).toFixed(2) + ' mi' }
+            }
+          }
+        }
+      });
+    }
+
+    function atualizarSecao2(cap, taxaLiqAnual, ipcaDec, saqueRealSeguro) {
+      const mRate = Math.pow(1 + taxaLiqAnual, 1 / 12) - 1;
+      const mIpca = Math.pow(1 + ipcaDec, 1 / 12) - 1;
+      const totalMeses = state.horizonte * 12;
+      const mesesAcum = state.anosAcum * 12;
+
+      let saldoUsuario = cap;
+      let saldoSeguro = cap;
+      let saqueAtual = state.saque;
+      let saqueSeguroAtual = saqueRealSeguro;
+      let mesZero = null;
+
+      const labels = ['Hoje'];
+      const curvaUsuario = [cap];
+      const curvaSeguro = [cap];
+
+      for (let m = 1; m <= totalMeses; m++) {
+        if (m <= mesesAcum) {
+          saldoUsuario = saldoUsuario * (1 + mRate) + state.aporte;
+          saldoSeguro = saldoSeguro * (1 + mRate) + state.aporte;
+          if (m === mesesAcum) {
+            const taxaReal = Math.max(0, (1 + taxaLiqAnual) / (1 + ipcaDec) - 1);
+            saqueSeguroAtual = (saldoSeguro * taxaReal) / 12;
+          }
+        } else {
+          if (state.corrigirIpca && m > mesesAcum + 1 && (m - mesesAcum - 1) % 12 === 0) {
+            saqueAtual *= (1 + ipcaDec);
+          }
+          if ((m - mesesAcum - 1) % 12 === 0 && m > mesesAcum + 1) {
+            saqueSeguroAtual *= (1 + ipcaDec);
+          }
+          saldoUsuario = Math.max(0, saldoUsuario * (1 + mRate) - saqueAtual);
+          saldoSeguro = Math.max(0, saldoSeguro * (1 + mRate) - saqueSeguroAtual);
+          if (saldoUsuario === 0 && mesZero === null) {
+            mesZero = Math.ceil(m / 12);
+          }
+        }
+
+        if (m % 12 === 0) {
+          labels.push(`Ano ${m / 12}`);
+          curvaUsuario.push(saldoUsuario);
+          curvaSeguro.push(saldoSeguro);
+        }
+      }
+
+      const saldoFinal = curvaUsuario[curvaUsuario.length - 1];
+      document.getElementById('resumo-simulador').innerHTML = `
+        <div style="margin-bottom: 0.4rem;">
+          <strong>Patrimônio após ${state.horizonte} anos:</strong>
+          <span style="color: ${saldoFinal > 0 ? '#0f766e' : '#b91c1c'}; font-weight: 800;">${fmtBRL(saldoFinal)}</span>
+        </div>
+        <div style="color: var(--text-muted); font-size: 0.82rem;">
+          ${mesZero
+            ? `Atenção: nesse ritmo de saque corrigido pela inflação, o capital se esgota no <strong>Ano ${mesZero}</strong>.`
+            : `Seu patrimônio resiste durante todo o período de <strong>${state.horizonte} anos</strong> com a configuração atual.`}
+        </div>
+      `;
+
+      if (charts.simulador) charts.simulador.destroy();
+      charts.simulador = new Chart(document.getElementById('chartSimulador'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Seu Saque Configurado',
+              data: curvaUsuario,
+              borderColor: '#0f766e',
+              backgroundColor: 'rgba(15, 118, 110, 0.12)',
+              fill: true,
+              borderWidth: 3,
+              tension: 0.25
+            },
+            {
+              label: 'Saque Real Seguro (Vitalício)',
+              data: curvaSeguro,
+              borderColor: '#2563eb',
+              borderDash: [6, 4],
+              tension: 0.25
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } },
+          scales: {
+            y: { ticks: { callback: v => 'R$ ' + (v / 1000000).toFixed(2) + ' mi' } }
+          }
+        }
+      });
+    }
+
+    function atualizarSecao3(cap, cdiDec) {
+      const custodia = cap > 10000 ? (cap - 10000) * 0.002 : 0;
+      const produtos = [
+        { nome: 'Tesouro Selic (100% Selic)', bruto: fmtPct(cdiDec * 100), liqAno: cap * cdiDec * 0.85 - custodia },
+        { nome: 'CDB 100% CDI (IR 15%)', bruto: fmtPct(cdiDec * 100), liqAno: cap * cdiDec * 0.85 },
+        { nome: 'LCI / LCA 85% CDI (Isento)', bruto: fmtPct(cdiDec * 85), liqAno: cap * cdiDec * 0.85 },
+        { nome: 'LCI / LCA 90% CDI (Isento)', bruto: fmtPct(cdiDec * 90), liqAno: cap * cdiDec * 0.90 },
+        { nome: 'LCI / LCA 93% CDI (Isento)', bruto: fmtPct(cdiDec * 93), liqAno: cap * cdiDec * 0.93 }
+      ];
+
+      document.getElementById('tabela-produtos').innerHTML = produtos.map(p => `
+        <tr>
+          <td><strong>${p.nome}</strong></td>
+          <td>${p.bruto}</td>
+          <td><strong style="color: #0f766e;">${fmtBRL(p.liqAno)}</strong></td>
+          <td>${fmtBRL(p.liqAno / 12)}</td>
+        </tr>
+      `).join('');
+
+      if (charts.produtos) charts.produtos.destroy();
+      charts.produtos = new Chart(document.getElementById('chartProdutos'), {
+        type: 'bar',
+        data: {
+          labels: ['Tesouro Selic', 'CDB 100%', 'LCI 85%', 'LCI 90%', 'LCI 93%'],
+          datasets: [{
+            label: 'Rendimento Líquido Anual (R$)',
+            data: produtos.map(p => p.liqAno),
+            backgroundColor: ['#64748b', '#3b82f6', '#14b8a6', '#0d9488', '#0f766e'],
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { ticks: { callback: v => 'R$ ' + (v / 1000).toFixed(0) + 'k' } }
+          }
+        }
+      });
+    }
+
+    function atualizarSecao4(aloc) {
+      // Escada de Liquidez
+      document.getElementById('escada-liquidez').innerHTML = `
+        <div class="ladder-step">
+          <strong>Camada 1: D+0 (Imediata)</strong>
+          <div>${fmtBRL(aloc.valorSelic)}</div>
+          <span>Tesouro Selic para saques mensais e emergências.</span>
+        </div>
+        <div class="ladder-step">
+          <strong>Camada 2: 9 a 12 Meses</strong>
+          <div>${fmtBRL(aloc.valorLciCurto)}</div>
+          <span>LCI/LCA 90% CDI liberada no 1º ano.</span>
+        </div>
+        <div class="ladder-step">
+          <strong>Camada 3: 24 a 36 Meses</strong>
+          <div>${fmtBRL(aloc.valorLciLongo)}</div>
+          <span>LCI/LCA 93%+ CDI travando alta rentabilidade.</span>
+        </div>
+      `;
+
+      // Tabela FGC (máx R$ 200.000 por banco para cobrir principal + juros abaixo de R$ 250k)
+      const numBancos = Math.max(1, Math.ceil(aloc.valorBancos / 200000));
+      const porBanco = aloc.valorBancos / numBancos;
+      let linhasFgc = `
+        <tr>
+          <td><strong>Tesouro Nacional</strong></td>
+          <td>Tesouro Selic</td>
+          <td><strong>${fmtBRL(aloc.valorSelic)}</strong></td>
+          <td><span class="tag tag-green">Garantia Soberana</span></td>
+        </tr>
+      `;
+      for (let i = 1; i <= numBancos; i++) {
+        linhasFgc += `
+          <tr>
+            <td>Banco Emissor ${i}</td>
+            <td>LCI / LCA Isenta</td>
+            <td>${fmtBRL(porBanco)}</td>
+            <td><span class="tag tag-blue">FGC (Abaixo R$ 250k)</span></td>
+          </tr>
+        `;
+      }
+      document.getElementById('tabela-fgc').innerHTML = linhasFgc;
+
+      if (charts.carteira) charts.carteira.destroy();
+      charts.carteira = new Chart(document.getElementById('chartCarteira'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Tesouro Selic (Liquidez)', 'LCI/LCA Curto Prazo', 'LCI/LCA Médio Prazo'],
+          datasets: [{
+            data: [aloc.valorSelic, aloc.valorLciCurto, aloc.valorLciLongo],
+            backgroundColor: ['#0f172a', '#14b8a6', '#0f766e'],
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
+    }
+
+    // =========================================================
+    // LISTENERS DOS CONTROLES
+    // =========================================================
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('capital-slider').addEventListener('input', (e) => {
+        state.capital = parseFloat(e.target.value);
+        document.getElementById('capital-input').value = fmtBRL(state.capital);
+        atualizarTudo();
+      });
+
+      document.getElementById('capital-input').addEventListener('change', (e) => {
+        const val = parseBRL(e.target.value);
+        if (val >= 1000) {
+          state.capital = val;
+          sincronizarInputs();
+          atualizarTudo();
+        }
+      });
+
+      document.getElementById('cdi-slider').addEventListener('input', (e) => {
+        state.cdi = parseFloat(e.target.value);
+        document.getElementById('cdi-input').value = state.cdi.toFixed(2);
+        atualizarTudo();
+      });
+
+      document.getElementById('cdi-input').addEventListener('change', (e) => {
+        state.cdi = parseFloat(e.target.value) || 12;
+        sincronizarInputs();
+        atualizarTudo();
+      });
+
+      document.getElementById('ipca-slider').addEventListener('input', (e) => {
+        state.ipca = parseFloat(e.target.value);
+        document.getElementById('ipca-input').value = state.ipca.toFixed(2);
+        atualizarTudo();
+      });
+
+      document.getElementById('ipca-input').addEventListener('change', (e) => {
+        state.ipca = parseFloat(e.target.value) || 4.5;
+        sincronizarInputs();
+        atualizarTudo();
+      });
+
+      document.getElementById('saque-slider').addEventListener('input', (e) => {
+        state.saque = parseFloat(e.target.value);
+        document.getElementById('saque-input').value = fmtBRL(state.saque);
+        atualizarTudo();
+      });
+
+      document.getElementById('saque-input').addEventListener('change', (e) => {
+        state.saque = parseBRL(e.target.value);
+        sincronizarInputs();
+        atualizarTudo();
+      });
+
+      document.getElementById('corrigir-ipca').addEventListener('change', (e) => {
+        state.corrigirIpca = e.target.checked;
+        atualizarTudo();
+      });
+
+      document.getElementById('aporte-input').addEventListener('change', (e) => {
+        state.aporte = parseFloat(e.target.value) || 0;
+        atualizarTudo();
+      });
+
+      document.getElementById('anos-acum-input').addEventListener('change', (e) => {
+        state.anosAcum = parseInt(e.target.value, 10) || 0;
+        atualizarTudo();
+      });
+
+      document.getElementById('horizonte-slider').addEventListener('input', (e) => {
+        state.horizonte = parseInt(e.target.value, 10);
+        document.getElementById('horizonte-val').textContent = `${state.horizonte} anos`;
+        atualizarTudo();
+      });
+
+      const sessaoSalva = localStorage.getItem('pf_sessao_atual');
+      if (sessaoSalva) {
+        state.usuario = sessaoSalva;
+        iniciarSessao();
+      } else {
+        atualizarTudo();
+      }
+
+      buscarTaxasBCB();
+      carregarVitrineLCI();
+    });
+  </script>
+</body>
+</html>
