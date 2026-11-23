@@ -1,0 +1,32 @@
+name: Atualizar Taxas LCI e LCA
+
+on:
+  schedule:
+    - cron: '30 12 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar-dados:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar arquivos do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Executar robô de taxas
+        run: python atualizar_taxas.py
+
+      - name: Salvar ofertas_lci.json atualizado no repositório
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "Robo Taxas LCI"
+          git add ofertas_lci.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: atualiza taxas LCI/LCA automaticamente" && git push)
