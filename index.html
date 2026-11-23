@@ -37,7 +37,7 @@
       line-height: 1.5;
     }
 
-    /* Tela de Login */
+    /* Tela de Login Obrigatória */
     #login-overlay {
       position: fixed;
       inset: 0;
@@ -126,7 +126,7 @@
       background: transparent;
       color: var(--text-muted);
       width: 100%;
-      margin-top: 0.5rem;
+      margin-top: 0.65rem;
       font-size: 0.85rem;
     }
     .btn-sm { padding: 0.4rem 0.7rem; font-size: 0.8rem; border-radius: 8px; }
@@ -415,11 +415,11 @@
 </head>
 <body>
 
-  <!-- TELA DE LOGIN -->
+  <!-- TELA DE LOGIN OBRIGATÓRIA -->
   <div id="login-overlay">
     <div class="login-card">
       <h1 id="auth-title">Acesso ao Planejamento</h1>
-      <p id="auth-subtitle">Entre com sua conta para sincronizar seus cenários na nuvem.</p>
+      <p id="auth-subtitle">Entre com sua conta ou cadastre-se para acessar o simulador.</p>
 
       <div id="auth-alert" class="auth-alert"></div>
 
@@ -433,8 +433,7 @@
       </div>
 
       <button class="btn btn-primary" id="btn-auth-submit" onclick="fazerLogin()">Entrar no Simulador</button>
-      <button class="btn btn-ghost" onclick="alternarModoAuth()" id="auth-toggle-btn">Não tem conta? Criar cadastro</button
-                                                                                                            
+      <button class="btn btn-ghost" onclick="alternarModoAuth()" id="auth-toggle-btn">Não tem conta? Criar cadastro</button>
     </div>
   </div>
 
@@ -445,7 +444,7 @@
       <span class="badge-bcb" id="bcb-status">Buscando taxas BCB...</span>
     </div>
     <div class="topbar-actions">
-      <span style="font-size: 0.82rem; color: #cbd5e1;" id="user-display">Visitante</span>
+      <span style="font-size: 0.82rem; color: #cbd5e1;" id="user-display">Carregando...</span>
       <button class="btn btn-outline btn-sm" onclick="salvarCenario(1)">Salvar Cenário 1</button>
       <button class="btn btn-outline btn-sm" onclick="carregarCenario(1)">Carregar 1</button>
       <button class="btn btn-outline btn-sm" onclick="buscarTaxasBCB()">Atualizar BCB</button>
@@ -756,7 +755,7 @@
 
   <script>
     // =========================================================
-    // CONFIGURAÇÃO DO SUPABASE (COLE SUAS CHAVES ABAIXO)
+    // CONFIGURAÇÃO DO SUPABASE
     // =========================================================
     const SUPABASE_URL = 'https://okdpnshkwqtukybptghd.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_uwlJApYUVZCP_2DVzz4i-Q_0J9WZkrM';
@@ -816,8 +815,8 @@
       state.modoCadastro = !state.modoCadastro;
       document.getElementById('auth-title').textContent = state.modoCadastro ? 'Criar Nova Conta' : 'Acesso ao Planejamento';
       document.getElementById('auth-subtitle').textContent = state.modoCadastro
-        ? 'Cadastre seu e-mail e senha para salvar seus cenários na nuvem.'
-        : 'Entre com sua conta para sincronizar seus cenários na nuvem.';
+        ? 'Cadastre seu e-mail e senha para acessar e salvar seus cenários na nuvem.'
+        : 'Entre com sua conta ou cadastre-se para acessar o simulador.';
       document.getElementById('btn-auth-submit').textContent = state.modoCadastro ? 'Cadastrar e Entrar' : 'Entrar no Simulador';
       document.getElementById('auth-toggle-btn').textContent = state.modoCadastro
         ? 'Já tem conta? Fazer login'
@@ -850,13 +849,12 @@
       }
 
       if (!supabaseClient) {
-        mostrarAlertaAuth('Supabase ainda não configurado no código (cole a URL e a chave anon no index.html) ou entre no Modo Visitante.');
+        mostrarAlertaAuth('Erro de conexão com o servidor de autenticação.');
         return;
       }
 
       btn.disabled = true;
       try {
-        // 1. Verifica se o e-mail está na lista de bloqueio do painel Admin
         const bloqueio = await verificarEmailBloqueado(email);
         if (bloqueio) {
           mostrarAlertaAuth(`Acesso bloqueado pelo administrador.${bloqueio.motivo ? ' (' + bloqueio.motivo + ')' : ''}`);
@@ -905,13 +903,6 @@
       }
     }
 
-    async function entrarVisitante() {
-      limparAlertaAuth();
-      state.usuario = 'visitante';
-      state.userId = null;
-      await iniciarSessao();
-    }
-
     async function sairConta() {
       if (supabaseClient && state.userId) {
         await supabaseClient.auth.signOut();
@@ -924,8 +915,7 @@
 
     async function iniciarSessao() {
       document.getElementById('login-overlay').style.display = 'none';
-      document.getElementById('user-display').textContent =
-        state.usuario === 'visitante' ? 'Modo Visitante' : state.usuario;
+      document.getElementById('user-display').textContent = state.usuario;
       await carregarAutomatico();
       atualizarTudo();
     }
@@ -947,597 +937,44 @@
     }
 
     async function salvarCenario(slot) {
+      if (!supabaseClient || !state.userId) return;
       const payload = extrairDadosSalvos();
-      if (supabaseClient && state.userId) {
-        const { error } = await supabaseClient
-          .from('cenarios_usuarios')
-          .upsert({
-            user_id: state.userId,
-            slot: `cenario_${slot}`,
-            dados: payload,
-            atualizado_em: new Date().toISOString()
-          }, { onConflict: 'user_id,slot' });
+      const { error } = await supabaseClient
+        .from('cenarios_usuarios')
+        .upsert({
+          user_id: state.userId,
+          slot: `cenario_${slot}`,
+          dados: payload,
+          atualizado_em: new Date().toISOString()
+        }, { onConflict: 'user_id,slot' });
 
-        if (error) {
-          alert('Erro ao salvar na nuvem: ' + error.message);
-          return;
-        }
-        alert(`Cenário ${slot} salvo na nuvem com sucesso!`);
-      } else {
-        localStorage.setItem(`pf_cenario_visitante_${slot}`, JSON.stringify(payload));
-        alert(`Cenário ${slot} salvo neste navegador (Modo Visitante)!`);
+      if (error) {
+        alert('Erro ao salvar na nuvem: ' + error.message);
+        return;
       }
+      alert(`Cenário ${slot} salvo na nuvem com sucesso!`);
     }
 
     async function carregarCenario(slot) {
-      let salvo = null;
-      if (supabaseClient && state.userId) {
-        const { data, error } = await supabaseClient
-          .from('cenarios_usuarios')
-          .select('dados')
-          .eq('user_id', state.userId)
-          .eq('slot', `cenario_${slot}`)
-          .maybeSingle();
+      if (!supabaseClient || !state.userId) return;
+      const { data, error } = await supabaseClient
+        .from('cenarios_usuarios')
+        .select('dados')
+        .eq('user_id', state.userId)
+        .eq('slot', `cenario_${slot}`)
+        .maybeSingle();
 
-        if (!error && data) salvo = data.dados;
-      } else {
-        salvo = JSON.parse(localStorage.getItem(`pf_cenario_visitante_${slot}`) || 'null');
-      }
-
-      if (!salvo) {
+      if (error || !data) {
         alert(`Nenhum dado encontrado no Cenário ${slot}.`);
         return;
       }
-      Object.assign(state, salvo);
+      Object.assign(state, data.dados);
       sincronizarInputs();
       atualizarTudo();
     }
 
     function salvarAutomatico() {
+      if (!supabaseClient || !state.userId) return;
       const payload = extrairDadosSalvos();
-      localStorage.setItem(`pf_auto_${state.usuario || 'visitante'}`, JSON.stringify(payload));
-
-      if (supabaseClient && state.userId) {
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(async () => {
-          await supabaseClient
-            .from('cenarios_usuarios')
-            .upsert({
-              user_id: state.userId,
-              slot: 'auto',
-              dados: payload,
-              atualizado_em: new Date().toISOString()
-            }, { onConflict: 'user_id,slot' });
-        }, 800);
-      }
-    }
-
-    async function carregarAutomatico() {
-      let salvo = null;
-      if (supabaseClient && state.userId) {
-        const { data, error } = await supabaseClient
-          .from('cenarios_usuarios')
-          .select('dados')
-          .eq('user_id', state.userId)
-          .eq('slot', 'auto')
-          .maybeSingle();
-
-        if (!error && data) salvo = data.dados;
-      }
-      if (!salvo) {
-        salvo = JSON.parse(localStorage.getItem(`pf_auto_${state.usuario || 'visitante'}`) || 'null');
-      }
-      if (salvo) {
-        Object.assign(state, salvo);
-        sincronizarInputs();
-      }
-    }
-
-    // =========================================================
-    // BUSCA DE TAXAS OFICIAIS NO BANCO CENTRAL (API BCB)
-    // =========================================================
-    async function buscarTaxasBCB() {
-      const badge = document.getElementById('bcb-status');
-      badge.textContent = 'Consultando Banco Central...';
-      try {
-        const [resSelic, resIpca] = await Promise.all([
-          fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados/ultimos/1?formato=json'),
-          fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.13522/dados/ultimos/1?formato=json')
-        ]);
-        const dadosSelic = await resSelic.json();
-        const dadosIpca = await resIpca.json();
-
-        if (dadosSelic && dadosSelic[0] && dadosSelic[0].valor) {
-          state.cdi = parseFloat(dadosSelic[0].valor);
-        }
-        if (dadosIpca && dadosIpca[0] && dadosIpca[0].valor) {
-          state.ipca = parseFloat(dadosIpca[0].valor);
-        }
-        sincronizarInputs();
-        atualizarTudo();
-        badge.textContent = `BCB Oficial: Selic ${fmtPct(state.cdi)} | IPCA ${fmtPct(state.ipca)}`;
-      } catch (e) {
-        badge.textContent = `Base Manual: CDI ${fmtPct(state.cdi)} | IPCA ${fmtPct(state.ipca)}`;
-      }
-    }
-
-    // =========================================================
-    // CARREGAMENTO DA VITRINE LCI/LCA (ofertas_lci.json)
-    // =========================================================
-    async function carregarVitrineLCI() {
-      const tbody = document.getElementById('tabela-vitrine-lci');
-      const dataBadge = document.getElementById('vitrine-data');
-      const fallback = {
-        atualizado_em: 'Base Referência',
-        ofertas: [
-          { emissor: 'Banco Daycoval / ABC', tipo: 'LCA', taxa_cdi: 90.0, equivalente_cdb_cdi: 105.9, carencia: '9 meses' },
-          { emissor: 'BTG Pactual / Inter', tipo: 'LCI', taxa_cdi: 92.0, equivalente_cdb_cdi: 108.2, carencia: '12 meses' },
-          { emissor: 'Banco Pine / Bari', tipo: 'LCI', taxa_cdi: 94.5, equivalente_cdb_cdi: 111.2, carencia: '24 meses' }
-        ]
-      };
-
-      let dados = fallback;
-      try {
-        const resp = await fetch('./ofertas_lci.json?v=' + Date.now());
-        if (resp.ok) {
-          dados = await resp.json();
-        }
-      } catch (e) {}
-
-      dataBadge.textContent = dados.atualizado_em;
-      tbody.innerHTML = dados.ofertas.map(o => `
-        <tr>
-          <td><strong>${o.emissor}</strong></td>
-          <td><span class="tag tag-blue">${o.tipo}</span></td>
-          <td><strong style="color: #059669;">${o.taxa_cdi.toFixed(1).replace('.', ',')}% CDI</strong></td>
-          <td>${o.equivalente_cdb_cdi.toFixed(1).replace('.', ',')}% CDI</td>
-          <td>${o.carencia}</td>
-        </tr>
-      `).join('');
-    }
-
-    // =========================================================
-    // CONTROLES & EVENTOS
-    // =========================================================
-    function sincronizarInputs() {
-      document.getElementById('capital-input').value = fmtBRL(state.capital);
-      document.getElementById('capital-slider').value = Math.min(5000000, Math.max(50000, state.capital));
-      document.getElementById('cdi-input').value = state.cdi.toFixed(2);
-      document.getElementById('cdi-slider').value = state.cdi;
-      document.getElementById('ipca-input').value = state.ipca.toFixed(2);
-      document.getElementById('ipca-slider').value = state.ipca;
-      document.getElementById('saque-input').value = fmtBRL(state.saque);
-      document.getElementById('saque-slider').value = Math.min(40000, Math.max(1000, state.saque));
-      document.getElementById('corrigir-ipca').checked = state.corrigirIpca;
-      document.getElementById('aporte-input').value = state.aporte;
-      document.getElementById('anos-acum-input').value = state.anosAcum;
-      document.getElementById('horizonte-slider').value = state.horizonte;
-      document.getElementById('horizonte-val').textContent = `${state.horizonte} anos`;
-    }
-
-    function setCapital(val) {
-      state.capital = val;
-      sincronizarInputs();
-      atualizarTudo();
-    }
-
-    function toggleFixarBarra() {
-      const bar = document.getElementById('control-bar');
-      const btn = document.getElementById('pin-btn');
-      bar.classList.toggle('sticky');
-      btn.textContent = bar.classList.contains('sticky') ? 'Desafixar Barra' : 'Fixar Barra no Topo';
-    }
-
-    function gerarPDF() {
-      const agora = new Date().toLocaleString('pt-BR');
-      document.getElementById('print-meta').textContent =
-        `Gerado em ${agora} | Titular: ${state.usuario === 'visitante' ? 'Visitante' : state.usuario} | Capital: ${fmtBRL(state.capital)} | CDI: ${fmtPct(state.cdi)} | IPCA: ${fmtPct(state.ipca)}`;
-      window.print();
-    }
-
-    // =========================================================
-    // CÁLCULOS FINANCEIROS & ATUALIZAÇÃO DOS GRÁFICOS
-    // =========================================================
-    function calcularAlocacaoSegura(cap, cdiDec) {
-      const alvoBancos = cap * 0.80;
-      const valorBancos = Math.min(1000000, alvoBancos);
-      const valorSelic = cap - valorBancos;
-
-      const valorLciCurto = valorBancos * 0.375;
-      const valorLciLongo = valorBancos * 0.625;
-
-      const custodiaB3 = valorSelic > 10000 ? (valorSelic - 10000) * 0.002 : 0;
-      const ganhoSelicLiq = valorSelic * cdiDec * 0.85 - custodiaB3;
-      const ganhoLciCurtoLiq = valorLciCurto * (cdiDec * 0.90);
-      const ganhoLciLongoLiq = valorLciLongo * (cdiDec * 0.93);
-
-      const totalLiqAnual = ganhoSelicLiq + ganhoLciCurtoLiq + ganhoLciLongoLiq;
-      const taxaLiqMedia = cap > 0 ? totalLiqAnual / cap : 0;
-
-      return {
-        valorSelic,
-        valorLciCurto,
-        valorLciLongo,
-        valorBancos,
-        totalLiqAnual,
-        rendaMensalLiq: totalLiqAnual / 12,
-        taxaLiqMedia
-      };
-    }
-
-    function atualizarTudo() {
-      salvarAutomatico();
-      const cap = state.capital;
-      const cdiDec = state.cdi / 100;
-      const ipcaDec = state.ipca / 100;
-      const poupDec = state.cdi > 8.5 ? 0.07 : cdiDec * 0.70;
-      const agrDec = cdiDec + 0.03;
-
-      const aloc = calcularAlocacaoSegura(cap, cdiDec);
-      const taxaReal = Math.max(0, (1 + aloc.taxaLiqMedia) / (1 + ipcaDec) - 1);
-      const saqueRealSeguro = (cap * taxaReal) / 12;
-
-      document.getElementById('kpi-capital').textContent = fmtBRL(cap);
-      document.getElementById('kpi-renda-mensal').textContent = fmtBRL(aloc.rendaMensalLiq);
-      document.getElementById('kpi-taxa-liquida').textContent = `Taxa líquida média de ${fmtPct(aloc.taxaLiqMedia * 100)} a.a.`;
-      document.getElementById('kpi-renda-anual').textContent = fmtBRL(aloc.totalLiqAnual);
-      document.getElementById('kpi-saque-real').textContent = fmtBRL(saqueRealSeguro);
-
-      atualizarSecao1(cap, poupDec, cdiDec, aloc.taxaLiqMedia, agrDec);
-      atualizarSecao2(cap, aloc.taxaLiqMedia, ipcaDec, saqueRealSeguro);
-      atualizarSecao3(cap, cdiDec);
-      atualizarSecao4(aloc);
-    }
-
-    function atualizarSecao1(cap, poupDec, cdiDec, taxaCarteiraLiq, agrDec) {
-      const anos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-      const sPoup = [];
-      const sCdi = [];
-      const sCart = [];
-      const sAgr = [];
-
-      anos.forEach(t => {
-        const ir = t === 1 ? 0.175 : 0.15;
-        sPoup.push(cap * Math.pow(1 + poupDec, t));
-        const brutoCdi = cap * Math.pow(1 + cdiDec, t);
-        sCdi.push(cap + (brutoCdi - cap) * (1 - ir));
-        sCart.push(cap * Math.pow(1 + taxaCarteiraLiq, t));
-        const brutoAgr = cap * Math.pow(1 + agrDec, t);
-        sAgr.push(cap + (brutoAgr - cap) * (1 - ir));
-      });
-
-      const linhas = [1, 3, 5, 10].map(t => {
-        const i = t - 1;
-        return `
-          <tr>
-            <td><strong>${t} ${t === 1 ? 'Ano' : 'Anos'}</strong></td>
-            <td>${fmtBRL(sPoup[i])}</td>
-            <td>${fmtBRL(sCdi[i])}</td>
-            <td><strong style="color: #0f766e;">${fmtBRL(sCart[i])}</strong></td>
-            <td>${fmtBRL(sAgr[i])}</td>
-          </tr>
-        `;
-      }).join('');
-      document.getElementById('tabela-cenarios').innerHTML = linhas;
-
-      if (charts.cenarios) charts.cenarios.destroy();
-      charts.cenarios = new Chart(document.getElementById('chartCenarios'), {
-        type: 'line',
-        data: {
-          labels: anos.map(a => `Ano ${a}`),
-          datasets: [
-            { label: 'Poupança', data: sPoup, borderColor: '#94a3b8', borderDash: [5, 5], tension: 0.3 },
-            { label: 'Tesouro / CDI Líq.', data: sCdi, borderColor: '#3b82f6', tension: 0.3 },
-            { label: 'Carteira 3 Camadas', data: sCart, borderColor: '#0f766e', borderWidth: 3, tension: 0.3 },
-            { label: 'Agressiva (15% bruto)', data: sAgr, borderColor: '#f59e0b', tension: 0.3 }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom' } },
-          scales: {
-            y: {
-              ticks: { callback: v => 'R$ ' + (v / 1000000).toFixed(2) + ' mi' }
-            }
-          }
-        }
-      });
-    }
-
-    function atualizarSecao2(cap, taxaLiqAnual, ipcaDec, saqueRealSeguro) {
-      const mRate = Math.pow(1 + taxaLiqAnual, 1 / 12) - 1;
-      const totalMeses = state.horizonte * 12;
-      const mesesAcum = state.anosAcum * 12;
-
-      let saldoUsuario = cap;
-      let saldoSeguro = cap;
-      let saqueAtual = state.saque;
-      let saqueSeguroAtual = saqueRealSeguro;
-      let mesZero = null;
-
-      const labels = ['Hoje'];
-      const curvaUsuario = [cap];
-      const curvaSeguro = [cap];
-
-      for (let m = 1; m <= totalMeses; m++) {
-        if (m <= mesesAcum) {
-          saldoUsuario = saldoUsuario * (1 + mRate) + state.aporte;
-          saldoSeguro = saldoSeguro * (1 + mRate) + state.aporte;
-          if (m === mesesAcum) {
-            const taxaReal = Math.max(0, (1 + taxaLiqAnual) / (1 + ipcaDec) - 1);
-            saqueSeguroAtual = (saldoSeguro * taxaReal) / 12;
-          }
-        } else {
-          if (state.corrigirIpca && m > mesesAcum + 1 && (m - mesesAcum - 1) % 12 === 0) {
-            saqueAtual *= (1 + ipcaDec);
-          }
-          if ((m - mesesAcum - 1) % 12 === 0 && m > mesesAcum + 1) {
-            saqueSeguroAtual *= (1 + ipcaDec);
-          }
-          saldoUsuario = Math.max(0, saldoUsuario * (1 + mRate) - saqueAtual);
-          saldoSeguro = Math.max(0, saldoSeguro * (1 + mRate) - saqueSeguroAtual);
-          if (saldoUsuario === 0 && mesZero === null) {
-            mesZero = Math.ceil(m / 12);
-          }
-        }
-
-        if (m % 12 === 0) {
-          labels.push(`Ano ${m / 12}`);
-          curvaUsuario.push(saldoUsuario);
-          curvaSeguro.push(saldoSeguro);
-        }
-      }
-
-      const saldoFinal = curvaUsuario[curvaUsuario.length - 1];
-      document.getElementById('resumo-simulador').innerHTML = `
-        <div style="margin-bottom: 0.4rem;">
-          <strong>Patrimônio após ${state.horizonte} anos:</strong>
-          <span style="color: ${saldoFinal > 0 ? '#0f766e' : '#b91c1c'}; font-weight: 800;">${fmtBRL(saldoFinal)}</span>
-        </div>
-        <div style="color: var(--text-muted); font-size: 0.82rem;">
-          ${mesZero
-            ? `Atenção: nesse ritmo de saque corrigido pela inflação, o capital se esgota no <strong>Ano ${mesZero}</strong>.`
-            : `Seu patrimônio resiste durante todo o período de <strong>${state.horizonte} anos</strong> com a configuração atual.`}
-        </div>
-      `;
-
-      if (charts.simulador) charts.simulador.destroy();
-      charts.simulador = new Chart(document.getElementById('chartSimulador'), {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [
-            {
-              label: 'Seu Saque Configurado',
-              data: curvaUsuario,
-              borderColor: '#0f766e',
-              backgroundColor: 'rgba(15, 118, 110, 0.12)',
-              fill: true,
-              borderWidth: 3,
-              tension: 0.25
-            },
-            {
-              label: 'Saque Real Seguro (Vitalício)',
-              data: curvaSeguro,
-              borderColor: '#2563eb',
-              borderDash: [6, 4],
-              tension: 0.25
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom' } },
-          scales: {
-            y: { ticks: { callback: v => 'R$ ' + (v / 1000000).toFixed(2) + ' mi' } }
-          }
-        }
-      });
-    }
-
-    function atualizarSecao3(cap, cdiDec) {
-      const custodia = cap > 10000 ? (cap - 10000) * 0.002 : 0;
-      const produtos = [
-        { nome: 'Tesouro Selic (100% Selic)', bruto: fmtPct(cdiDec * 100), liqAno: cap * cdiDec * 0.85 - custodia },
-        { nome: 'CDB 100% CDI (IR 15%)', bruto: fmtPct(cdiDec * 100), liqAno: cap * cdiDec * 0.85 },
-        { nome: 'LCI / LCA 85% CDI (Isento)', bruto: fmtPct(cdiDec * 85), liqAno: cap * cdiDec * 0.85 },
-        { nome: 'LCI / LCA 90% CDI (Isento)', bruto: fmtPct(cdiDec * 90), liqAno: cap * cdiDec * 0.90 },
-        { nome: 'LCI / LCA 93% CDI (Isento)', bruto: fmtPct(cdiDec * 93), liqAno: cap * cdiDec * 0.93 }
-      ];
-
-      document.getElementById('tabela-produtos').innerHTML = produtos.map(p => `
-        <tr>
-          <td><strong>${p.nome}</strong></td>
-          <td>${p.bruto}</td>
-          <td><strong style="color: #0f766e;">${fmtBRL(p.liqAno)}</strong></td>
-          <td>${fmtBRL(p.liqAno / 12)}</td>
-        </tr>
-      `).join('');
-
-      if (charts.produtos) charts.produtos.destroy();
-      charts.produtos = new Chart(document.getElementById('chartProdutos'), {
-        type: 'bar',
-        data: {
-          labels: ['Tesouro Selic', 'CDB 100%', 'LCI 85%', 'LCI 90%', 'LCI 93%'],
-          datasets: [{
-            label: 'Rendimento Líquido Anual (R$)',
-            data: produtos.map(p => p.liqAno),
-            backgroundColor: ['#64748b', '#3b82f6', '#14b8a6', '#0d9488', '#0f766e'],
-            borderRadius: 8
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { ticks: { callback: v => 'R$ ' + (v / 1000).toFixed(0) + 'k' } }
-          }
-        }
-      });
-    }
-
-    function atualizarSecao4(aloc) {
-      document.getElementById('escada-liquidez').innerHTML = `
-        <div class="ladder-step">
-          <strong>Camada 1: D+0 (Imediata)</strong>
-          <div>${fmtBRL(aloc.valorSelic)}</div>
-          <span>Tesouro Selic para saques mensais e emergências.</span>
-        </div>
-        <div class="ladder-step">
-          <strong>Camada 2: 9 a 12 Meses</strong>
-          <div>${fmtBRL(aloc.valorLciCurto)}</div>
-          <span>LCI/LCA 90% CDI liberada no 1º ano.</span>
-        </div>
-        <div class="ladder-step">
-          <strong>Camada 3: 24 a 36 Meses</strong>
-          <div>${fmtBRL(aloc.valorLciLongo)}</div>
-          <span>LCI/LCA 93%+ CDI travando alta rentabilidade.</span>
-        </div>
-      `;
-
-      const numBancos = Math.max(1, Math.ceil(aloc.valorBancos / 200000));
-      const porBanco = aloc.valorBancos / numBancos;
-      let linhasFgc = `
-        <tr>
-          <td><strong>Tesouro Nacional</strong></td>
-          <td>Tesouro Selic</td>
-          <td><strong>${fmtBRL(aloc.valorSelic)}</strong></td>
-          <td><span class="tag tag-green">Garantia Soberana</span></td>
-        </tr>
-      `;
-      for (let i = 1; i <= numBancos; i++) {
-        linhasFgc += `
-          <tr>
-            <td>Banco Emissor ${i}</td>
-            <td>LCI / LCA Isenta</td>
-            <td>${fmtBRL(porBanco)}</td>
-            <td><span class="tag tag-blue">FGC (Abaixo R$ 250k)</span></td>
-          </tr>
-        `;
-      }
-      document.getElementById('tabela-fgc').innerHTML = linhasFgc;
-
-      if (charts.carteira) charts.carteira.destroy();
-      charts.carteira = new Chart(document.getElementById('chartCarteira'), {
-        type: 'doughnut',
-        data: {
-          labels: ['Tesouro Selic (Liquidez)', 'LCI/LCA Curto Prazo', 'LCI/LCA Médio Prazo'],
-          datasets: [{
-            data: [aloc.valorSelic, aloc.valorLciCurto, aloc.valorLciLongo],
-            backgroundColor: ['#0f172a', '#14b8a6', '#0f766e'],
-            borderWidth: 2
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom' } }
-        }
-      });
-    }
-
-    // =========================================================
-    // LISTENERS DOS CONTROLES & INICIALIZAÇÃO
-    // =========================================================
-    document.addEventListener('DOMContentLoaded', async () => {
-      document.getElementById('capital-slider').addEventListener('input', (e) => {
-        state.capital = parseFloat(e.target.value);
-        document.getElementById('capital-input').value = fmtBRL(state.capital);
-        atualizarTudo();
-      });
-
-      document.getElementById('capital-input').addEventListener('change', (e) => {
-        const val = parseBRL(e.target.value);
-        if (val >= 1000) {
-          state.capital = val;
-          sincronizarInputs();
-          atualizarTudo();
-        }
-      });
-
-      document.getElementById('cdi-slider').addEventListener('input', (e) => {
-        state.cdi = parseFloat(e.target.value);
-        document.getElementById('cdi-input').value = state.cdi.toFixed(2);
-        atualizarTudo();
-      });
-
-      document.getElementById('cdi-input').addEventListener('change', (e) => {
-        state.cdi = parseFloat(e.target.value) || 12;
-        sincronizarInputs();
-        atualizarTudo();
-      });
-
-      document.getElementById('ipca-slider').addEventListener('input', (e) => {
-        state.ipca = parseFloat(e.target.value);
-        document.getElementById('ipca-input').value = state.ipca.toFixed(2);
-        atualizarTudo();
-      });
-
-      document.getElementById('ipca-input').addEventListener('change', (e) => {
-        state.ipca = parseFloat(e.target.value) || 4.5;
-        sincronizarInputs();
-        atualizarTudo();
-      });
-
-      document.getElementById('saque-slider').addEventListener('input', (e) => {
-        state.saque = parseFloat(e.target.value);
-        document.getElementById('saque-input').value = fmtBRL(state.saque);
-        atualizarTudo();
-      });
-
-      document.getElementById('saque-input').addEventListener('change', (e) => {
-        state.saque = parseBRL(e.target.value);
-        sincronizarInputs();
-        atualizarTudo();
-      });
-
-      document.getElementById('corrigir-ipca').addEventListener('change', (e) => {
-        state.corrigirIpca = e.target.checked;
-        atualizarTudo();
-      });
-
-      document.getElementById('aporte-input').addEventListener('change', (e) => {
-        state.aporte = parseFloat(e.target.value) || 0;
-        atualizarTudo();
-      });
-
-      document.getElementById('anos-acum-input').addEventListener('change', (e) => {
-        state.anosAcum = parseInt(e.target.value, 10) || 0;
-        atualizarTudo();
-      });
-
-      document.getElementById('horizonte-slider').addEventListener('input', (e) => {
-        state.horizonte = parseInt(e.target.value, 10);
-        document.getElementById('horizonte-val').textContent = `${state.horizonte} anos`;
-        atualizarTudo();
-      });
-
-      // Restaura sessão ativa do Supabase se o usuário já estiver logado
-      if (supabaseClient) {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session && session.user) {
-          const bloqueio = await verificarEmailBloqueado(session.user.email);
-          if (bloqueio) {
-            await supabaseClient.auth.signOut();
-            mostrarAlertaAuth('Seu acesso foi bloqueado pelo administrador.');
-          } else {
-            state.usuario = session.user.email;
-            state.userId = session.user.id;
-            await iniciarSessao();
-          }
-        } else {
-          atualizarTudo();
-        }
-      } else {
-        atualizarTudo();
-      }
-
-      buscarTaxasBCB();
-      carregarVitrineLCI();
-    });
-  </script>
-</body>
-</html>
+      clearTimeout(saveTimer);
+      save
