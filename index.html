@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Planejamento Financeiro & Renda Passiva — Guia Interativo</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --bg: #f1f5f9;
@@ -65,6 +66,22 @@
       font-size: 0.9rem;
       color: var(--text-muted);
     }
+    .auth-alert {
+      display: none;
+      padding: 0.65rem 0.85rem;
+      border-radius: 10px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      background: var(--danger-light);
+      color: var(--danger);
+      border: 1px solid #fecaca;
+    }
+    .auth-alert.info {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      border-color: #99f6e4;
+    }
     .form-group { margin-bottom: 0.9rem; }
     .form-group label {
       display: block;
@@ -96,14 +113,15 @@
       cursor: pointer;
       transition: 0.15s ease;
     }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-primary { background: var(--primary); color: #fff; width: 100%; }
-    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
     .btn-outline {
       background: var(--surface);
       border-color: var(--border);
       color: var(--text);
     }
-    .btn-outline:hover { background: var(--surface-alt); }
+    .btn-outline:hover:not(:disabled) { background: var(--surface-alt); }
     .btn-ghost {
       background: transparent;
       color: var(--text-muted);
@@ -353,7 +371,6 @@
     }
     .tag-green { background: #dcfce7; color: #166534; }
     .tag-blue { background: #dbeafe; color: #1e40af; }
-    .tag-amber { background: #fef3c7; color: #92400e; }
 
     /* Escada de Liquidez */
     .ladder-grid {
@@ -402,7 +419,9 @@
   <div id="login-overlay">
     <div class="login-card">
       <h1 id="auth-title">Acesso ao Planejamento</h1>
-      <p id="auth-subtitle">Entre para salvar seus cenários e simulações personalizadas.</p>
+      <p id="auth-subtitle">Entre com sua conta para sincronizar seus cenários na nuvem.</p>
+
+      <div id="auth-alert" class="auth-alert"></div>
 
       <div class="form-group">
         <label for="auth-email">E-mail</label>
@@ -410,11 +429,11 @@
       </div>
       <div class="form-group">
         <label for="auth-pass">Senha</label>
-        <input type="password" id="auth-pass" placeholder="Mínimo 4 caracteres" />
+        <input type="password" id="auth-pass" placeholder="Mínimo 6 caracteres" />
       </div>
 
-      <button class="btn btn-primary" onclick="fazerLogin()">Entrar no Simulador</button>
-      <button class="btn btn-ghost" onclick="alternarModoAuth()" id="auth-toggle-btn">Não tem conta? Criar cadastro rápido</button>
+      <button class="btn btn-primary" id="btn-auth-submit" onclick="fazerLogin()">Entrar no Simulador</button>
+      <button class="btn btn-ghost" onclick="alternarModoAuth()" id="auth-toggle-btn">Não tem conta? Criar cadastro</button>
       <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 1rem 0;" />
       <button class="btn btn-outline" style="width: 100%;" onclick="entrarVisitante()">Continuar sem login (Modo Visitante)</button>
     </div>
@@ -445,7 +464,6 @@
       </div>
 
       <div class="control-grid">
-        <!-- Capital Inicial -->
         <div class="ctrl-box">
           <div class="ctrl-header">
             <label for="capital-input">Capital Inicial Investido</label>
@@ -461,7 +479,6 @@
           </div>
         </div>
 
-        <!-- Selic / CDI -->
         <div class="ctrl-box">
           <div class="ctrl-header">
             <label for="cdi-input">Selic / CDI (% a.a.)</label>
@@ -471,7 +488,6 @@
           <div style="font-size: 0.74rem; color: var(--text-light); margin-top: 0.35rem;">Base para Tesouro, CDB e LCI/LCA</div>
         </div>
 
-        <!-- Inflação IPCA -->
         <div class="ctrl-box">
           <div class="ctrl-header">
             <label for="ipca-input">Inflação IPCA (% a.a.)</label>
@@ -485,7 +501,6 @@
   </section>
 
   <main class="container">
-    <!-- Cabeçalho exclusivo ao imprimir PDF -->
     <div id="print-header">
       <h1 style="margin: 0; color: #0f172a;">Relatório de Planejamento Financeiro &amp; Renda Passiva</h1>
       <p id="print-meta" style="margin: 0.35rem 0 0; color: #475569; font-size: 0.9rem;"></p>
@@ -667,7 +682,6 @@
             <tbody id="tabela-produtos"></tbody>
           </table>
 
-          <!-- VITRINE ALIMENTADA PELO ROBÔ DIÁRIO (ofertas_lci.json) -->
           <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed var(--border);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
               <strong style="font-size: 0.92rem; color: var(--text);">Vitrine Diária de LCI &amp; LCA (Robô GitHub)</strong>
@@ -743,6 +757,16 @@
 
   <script>
     // =========================================================
+    // CONFIGURAÇÃO DO SUPABASE (COLE SUAS CHAVES ABAIXO)
+    // =========================================================
+    const SUPABASE_URL = 'https://okdpnshkwqtukybptghd.supabase.co/rest/v1/';
+    const SUPABASE_ANON_KEY = 'sb_publishable_uwlJApYUVZCP_2DVzz4i-Q_0J9WZkrM';
+
+    const supabaseClient = (SUPABASE_URL.startsWith('http') && window.supabase)
+      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
+
+    // =========================================================
     // ESTADO GLOBAL DA APLICAÇÃO
     // =========================================================
     const state = {
@@ -755,10 +779,12 @@
       anosAcum: 0,
       horizonte: 20,
       usuario: null,
+      userId: null,
       modoCadastro: false
     };
 
     let charts = {};
+    let saveTimer = null;
 
     // =========================================================
     // FORMATAÇÃO MONETÁRIA & UTILITÁRIOS
@@ -772,64 +798,144 @@
       return isNaN(num) ? 0 : num;
     }
 
+    function mostrarAlertaAuth(msg, isInfo = false) {
+      const box = document.getElementById('auth-alert');
+      box.textContent = msg;
+      box.className = isInfo ? 'auth-alert info' : 'auth-alert';
+      box.style.display = 'block';
+    }
+
+    function limparAlertaAuth() {
+      document.getElementById('auth-alert').style.display = 'none';
+    }
+
     // =========================================================
-    // AUTENTICAÇÃO E CENÁRIOS SALVOS (LOCALSTORAGE)
+    // AUTENTICAÇÃO REAL SUPABASE + BLOQUEIO DE E-MAILS
     // =========================================================
     function alternarModoAuth() {
+      limparAlertaAuth();
       state.modoCadastro = !state.modoCadastro;
       document.getElementById('auth-title').textContent = state.modoCadastro ? 'Criar Nova Conta' : 'Acesso ao Planejamento';
       document.getElementById('auth-subtitle').textContent = state.modoCadastro
-        ? 'Cadastre seu e-mail e senha para salvar seus cenários.'
-        : 'Entre para salvar seus cenários e simulações personalizadas.';
+        ? 'Cadastre seu e-mail e senha para salvar seus cenários na nuvem.'
+        : 'Entre com sua conta para sincronizar seus cenários na nuvem.';
+      document.getElementById('btn-auth-submit').textContent = state.modoCadastro ? 'Cadastrar e Entrar' : 'Entrar no Simulador';
       document.getElementById('auth-toggle-btn').textContent = state.modoCadastro
         ? 'Já tem conta? Fazer login'
-        : 'Não tem conta? Criar cadastro rápido';
+        : 'Não tem conta? Criar cadastro';
     }
 
-    function fazerLogin() {
+    async function verificarEmailBloqueado(email) {
+      if (!supabaseClient) return null;
+      const { data, error } = await supabaseClient
+        .from('emails_bloqueados')
+        .select('email, motivo')
+        .eq('email', email.toLowerCase())
+        .maybeSingle();
+      if (error) {
+        console.warn('Aviso ao checar bloqueio:', error.message);
+        return null;
+      }
+      return data;
+    }
+
+    async function fazerLogin() {
+      limparAlertaAuth();
       const email = document.getElementById('auth-email').value.trim().toLowerCase();
-      const pass = document.getElementById('auth-pass').value;
-      if (!email || !email.includes('@') || pass.length < 4) {
-        alert('Informe um e-mail válido e uma senha com pelo menos 4 caracteres.');
+      const password = document.getElementById('auth-pass').value;
+      const btn = document.getElementById('btn-auth-submit');
+
+      if (!email || !email.includes('@') || password.length < 6) {
+        mostrarAlertaAuth('Informe um e-mail válido e uma senha com pelo menos 6 caracteres.');
         return;
       }
-      const contas = JSON.parse(localStorage.getItem('pf_contas') || '{}');
-      if (state.modoCadastro) {
-        contas[email] = { pass };
-        localStorage.setItem('pf_contas', JSON.stringify(contas));
-      } else if (contas[email] && contas[email].pass !== pass) {
-        alert('Senha incorreta para este e-mail.');
+
+      if (!supabaseClient) {
+        mostrarAlertaAuth('Supabase ainda não configurado no código (cole a URL e a chave anon no index.html) ou entre no Modo Visitante.');
         return;
-      } else if (!contas[email]) {
-        contas[email] = { pass };
-        localStorage.setItem('pf_contas', JSON.stringify(contas));
       }
-      state.usuario = email;
-      localStorage.setItem('pf_sessao_atual', email);
-      iniciarSessao();
+
+      btn.disabled = true;
+      try {
+        // 1. Verifica se o e-mail está na lista de bloqueio do painel Admin
+        const bloqueio = await verificarEmailBloqueado(email);
+        if (bloqueio) {
+          mostrarAlertaAuth(`Acesso bloqueado pelo administrador.${bloqueio.motivo ? ' (' + bloqueio.motivo + ')' : ''}`);
+          return;
+        }
+
+        if (state.modoCadastro) {
+          const { data, error } = await supabaseClient.auth.signUp({ email, password });
+          if (error) {
+            if (error.message.includes('already registered')) {
+              mostrarAlertaAuth('Este e-mail já está cadastrado. Clique em "Já tem conta? Fazer login".');
+            } else {
+              mostrarAlertaAuth('Erro ao cadastrar: ' + error.message);
+            }
+            return;
+          }
+          if (data.user && !data.session) {
+            mostrarAlertaAuth('Conta criada! Verifique sua caixa de entrada para confirmar o e-mail antes de entrar.', true);
+            return;
+          }
+          if (data.session) {
+            state.usuario = data.user.email;
+            state.userId = data.user.id;
+            await iniciarSessao();
+          }
+        } else {
+          const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+          if (error) {
+            if (error.message.toLowerCase().includes('banned')) {
+              mostrarAlertaAuth('Esta conta foi suspensa pelo administrador.');
+            } else if (error.message.toLowerCase().includes('email not confirmed')) {
+              mostrarAlertaAuth('E-mail ainda não confirmado. Verifique sua caixa de entrada.');
+            } else {
+              mostrarAlertaAuth('E-mail ou senha incorretos.');
+            }
+            return;
+          }
+          if (data.session) {
+            state.usuario = data.user.email;
+            state.userId = data.user.id;
+            await iniciarSessao();
+          }
+        }
+      } finally {
+        btn.disabled = false;
+      }
     }
 
-    function entrarVisitante() {
+    async function entrarVisitante() {
+      limparAlertaAuth();
       state.usuario = 'visitante';
-      iniciarSessao();
+      state.userId = null;
+      await iniciarSessao();
     }
 
-    function sairConta() {
-      localStorage.removeItem('pf_sessao_atual');
+    async function sairConta() {
+      if (supabaseClient && state.userId) {
+        await supabaseClient.auth.signOut();
+      }
+      state.usuario = null;
+      state.userId = null;
+      limparAlertaAuth();
       document.getElementById('login-overlay').style.display = 'flex';
     }
 
-    function iniciarSessao() {
+    async function iniciarSessao() {
       document.getElementById('login-overlay').style.display = 'none';
       document.getElementById('user-display').textContent =
         state.usuario === 'visitante' ? 'Modo Visitante' : state.usuario;
-      carregarAutomatico();
+      await carregarAutomatico();
       atualizarTudo();
     }
 
-    function salvarCenario(slot) {
-      const chave = `pf_cenario_${state.usuario || 'visitante'}_${slot}`;
-      localStorage.setItem(chave, JSON.stringify({
+    // =========================================================
+    // PERSISTÊNCIA NA NUVEM (SUPABASE) + FALLBACK LOCAL
+    // =========================================================
+    function extrairDadosSalvos() {
+      return {
         capital: state.capital,
         cdi: state.cdi,
         ipca: state.ipca,
@@ -838,13 +944,47 @@
         aporte: state.aporte,
         anosAcum: state.anosAcum,
         horizonte: state.horizonte
-      }));
-      alert(`Cenário ${slot} salvo com sucesso!`);
+      };
     }
 
-    function carregarCenario(slot) {
-      const chave = `pf_cenario_${state.usuario || 'visitante'}_${slot}`;
-      const salvo = JSON.parse(localStorage.getItem(chave) || 'null');
+    async function salvarCenario(slot) {
+      const payload = extrairDadosSalvos();
+      if (supabaseClient && state.userId) {
+        const { error } = await supabaseClient
+          .from('cenarios_usuarios')
+          .upsert({
+            user_id: state.userId,
+            slot: `cenario_${slot}`,
+            dados: payload,
+            atualizado_em: new Date().toISOString()
+          }, { onConflict: 'user_id,slot' });
+
+        if (error) {
+          alert('Erro ao salvar na nuvem: ' + error.message);
+          return;
+        }
+        alert(`Cenário ${slot} salvo na nuvem com sucesso!`);
+      } else {
+        localStorage.setItem(`pf_cenario_visitante_${slot}`, JSON.stringify(payload));
+        alert(`Cenário ${slot} salvo neste navegador (Modo Visitante)!`);
+      }
+    }
+
+    async function carregarCenario(slot) {
+      let salvo = null;
+      if (supabaseClient && state.userId) {
+        const { data, error } = await supabaseClient
+          .from('cenarios_usuarios')
+          .select('dados')
+          .eq('user_id', state.userId)
+          .eq('slot', `cenario_${slot}`)
+          .maybeSingle();
+
+        if (!error && data) salvo = data.dados;
+      } else {
+        salvo = JSON.parse(localStorage.getItem(`pf_cenario_visitante_${slot}`) || 'null');
+      }
+
       if (!salvo) {
         alert(`Nenhum dado encontrado no Cenário ${slot}.`);
         return;
@@ -855,11 +995,39 @@
     }
 
     function salvarAutomatico() {
-      localStorage.setItem(`pf_auto_${state.usuario || 'visitante'}`, JSON.stringify(state));
+      const payload = extrairDadosSalvos();
+      localStorage.setItem(`pf_auto_${state.usuario || 'visitante'}`, JSON.stringify(payload));
+
+      if (supabaseClient && state.userId) {
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(async () => {
+          await supabaseClient
+            .from('cenarios_usuarios')
+            .upsert({
+              user_id: state.userId,
+              slot: 'auto',
+              dados: payload,
+              atualizado_em: new Date().toISOString()
+            }, { onConflict: 'user_id,slot' });
+        }, 800);
+      }
     }
 
-    function carregarAutomatico() {
-      const salvo = JSON.parse(localStorage.getItem(`pf_auto_${state.usuario || 'visitante'}`) || 'null');
+    async function carregarAutomatico() {
+      let salvo = null;
+      if (supabaseClient && state.userId) {
+        const { data, error } = await supabaseClient
+          .from('cenarios_usuarios')
+          .select('dados')
+          .eq('user_id', state.userId)
+          .eq('slot', 'auto')
+          .maybeSingle();
+
+        if (!error && data) salvo = data.dados;
+      }
+      if (!salvo) {
+        salvo = JSON.parse(localStorage.getItem(`pf_auto_${state.usuario || 'visitante'}`) || 'null');
+      }
       if (salvo) {
         Object.assign(state, salvo);
         sincronizarInputs();
@@ -972,13 +1140,12 @@
     // CÁLCULOS FINANCEIROS & ATUALIZAÇÃO DOS GRÁFICOS
     // =========================================================
     function calcularAlocacaoSegura(cap, cdiDec) {
-      // Limite global do FGC por CPF: R$ 1.000.000,00 em títulos bancários (LCI/LCA)
       const alvoBancos = cap * 0.80;
       const valorBancos = Math.min(1000000, alvoBancos);
       const valorSelic = cap - valorBancos;
 
-      const valorLciCurto = valorBancos * 0.375; // ~30% do total quando <= 1.25M
-      const valorLciLongo = valorBancos * 0.625; // ~50% do total quando <= 1.25M
+      const valorLciCurto = valorBancos * 0.375;
+      const valorLciLongo = valorBancos * 0.625;
 
       const custodiaB3 = valorSelic > 10000 ? (valorSelic - 10000) * 0.002 : 0;
       const ganhoSelicLiq = valorSelic * cdiDec * 0.85 - custodiaB3;
@@ -1005,15 +1172,12 @@
       const cdiDec = state.cdi / 100;
       const ipcaDec = state.ipca / 100;
       const poupDec = state.cdi > 8.5 ? 0.07 : cdiDec * 0.70;
-      const agrDec = cdiDec + 0.03; // Carteira agressiva ~3% acima do CDI
+      const agrDec = cdiDec + 0.03;
 
       const aloc = calcularAlocacaoSegura(cap, cdiDec);
-
-      // Taxa real acima da inflação
       const taxaReal = Math.max(0, (1 + aloc.taxaLiqMedia) / (1 + ipcaDec) - 1);
       const saqueRealSeguro = (cap * taxaReal) / 12;
 
-      // Atualiza KPIs
       document.getElementById('kpi-capital').textContent = fmtBRL(cap);
       document.getElementById('kpi-renda-mensal').textContent = fmtBRL(aloc.rendaMensalLiq);
       document.getElementById('kpi-taxa-liquida').textContent = `Taxa líquida média de ${fmtPct(aloc.taxaLiqMedia * 100)} a.a.`;
@@ -1084,7 +1248,6 @@
 
     function atualizarSecao2(cap, taxaLiqAnual, ipcaDec, saqueRealSeguro) {
       const mRate = Math.pow(1 + taxaLiqAnual, 1 / 12) - 1;
-      const mIpca = Math.pow(1 + ipcaDec, 1 / 12) - 1;
       const totalMeses = state.horizonte * 12;
       const mesesAcum = state.anosAcum * 12;
 
@@ -1218,7 +1381,6 @@
     }
 
     function atualizarSecao4(aloc) {
-      // Escada de Liquidez
       document.getElementById('escada-liquidez').innerHTML = `
         <div class="ladder-step">
           <strong>Camada 1: D+0 (Imediata)</strong>
@@ -1237,7 +1399,6 @@
         </div>
       `;
 
-      // Tabela FGC (máx R$ 200.000 por banco para cobrir principal + juros abaixo de R$ 250k)
       const numBancos = Math.max(1, Math.ceil(aloc.valorBancos / 200000));
       const porBanco = aloc.valorBancos / numBancos;
       let linhasFgc = `
@@ -1280,9 +1441,9 @@
     }
 
     // =========================================================
-    // LISTENERS DOS CONTROLES
+    // LISTENERS DOS CONTROLES & INICIALIZAÇÃO
     // =========================================================
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('capital-slider').addEventListener('input', (e) => {
         state.capital = parseFloat(e.target.value);
         document.getElementById('capital-input').value = fmtBRL(state.capital);
@@ -1355,10 +1516,22 @@
         atualizarTudo();
       });
 
-      const sessaoSalva = localStorage.getItem('pf_sessao_atual');
-      if (sessaoSalva) {
-        state.usuario = sessaoSalva;
-        iniciarSessao();
+      // Restaura sessão ativa do Supabase se o usuário já estiver logado
+      if (supabaseClient) {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session && session.user) {
+          const bloqueio = await verificarEmailBloqueado(session.user.email);
+          if (bloqueio) {
+            await supabaseClient.auth.signOut();
+            mostrarAlertaAuth('Seu acesso foi bloqueado pelo administrador.');
+          } else {
+            state.usuario = session.user.email;
+            state.userId = session.user.id;
+            await iniciarSessao();
+          }
+        } else {
+          atualizarTudo();
+        }
       } else {
         atualizarTudo();
       }
