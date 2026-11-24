@@ -37,6 +37,8 @@ def main():
             "taxa_cdi": 90.0,
             "carencia": "9 meses (270 dias)",
             "aplicacao_minima": 1000,
+            "corretora": "Rico",
+            "url_oferta": "https://www.rico.com.vc/investimentos/renda-fixa/lci-e-lca/",
         },
         {
             "emissor": "BTG Pactual / Banco Inter",
@@ -44,6 +46,8 @@ def main():
             "taxa_cdi": 92.0,
             "carencia": "12 meses (365 dias)",
             "aplicacao_minima": 5000,
+            "corretora": "XP Investimentos",
+            "url_oferta": "https://www.xpi.com.br/investimentos/renda-fixa/lci-lca/",
         },
         {
             "emissor": "Banco Pine / Banco Bari",
@@ -51,6 +55,8 @@ def main():
             "taxa_cdi": 94.5,
             "carencia": "24 meses (720 dias)",
             "aplicacao_minima": 10000,
+            "corretora": "XP / Rico",
+            "url_oferta": "https://www.xpi.com.br/investimentos/renda-fixa/lci-lca/",
         },
     ]
 
@@ -67,6 +73,8 @@ def main():
             "equivalente_cdb_cdi": equiv_cdb,
             "carencia": item["carencia"],
             "aplicacao_minima": item["aplicacao_minima"],
+            "corretora": item["corretora"],
+            "url_oferta": item["url_oferta"],
             "garantia": "FGC até R$ 250 mil",
         })
 
