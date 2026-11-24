@@ -681,9 +681,13 @@
           </table>
 
           <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed var(--border);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.65rem;">
               <strong style="font-size: 0.92rem; color: var(--text);">Vitrine Diária de LCI &amp; LCA (Robô GitHub)</strong>
-              <span class="tag tag-green" id="vitrine-data">Atualizado hoje</span>
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <a href="https://www.xpi.com.br/investimentos/renda-fixa/lci-lca/" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="text-decoration: none;">Ver na XP ↗</a>
+                <a href="https://www.rico.com.vc/investimentos/renda-fixa/lci-e-lca/" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="text-decoration: none;">Ver na Rico ↗</a>
+                <span class="tag tag-green" id="vitrine-data">Atualizado hoje</span>
+              </div>
             </div>
             <table>
               <thead>
@@ -693,6 +697,7 @@
                   <th>Taxa</th>
                   <th>Equiv. CDB</th>
                   <th>Carência</th>
+                  <th>Corretora</th>
                 </tr>
               </thead>
               <tbody id="tabela-vitrine-lci"></tbody>
@@ -1041,9 +1046,9 @@
       const fallback = {
         atualizado_em: 'Base Referência',
         ofertas: [
-          { emissor: 'Banco Daycoval / ABC', tipo: 'LCA', taxa_cdi: 90.0, equivalente_cdb_cdi: 105.9, carencia: '9 meses' },
-          { emissor: 'BTG Pactual / Inter', tipo: 'LCI', taxa_cdi: 92.0, equivalente_cdb_cdi: 108.2, carencia: '12 meses' },
-          { emissor: 'Banco Pine / Bari', tipo: 'LCI', taxa_cdi: 94.5, equivalente_cdb_cdi: 111.2, carencia: '24 meses' }
+          { emissor: 'Banco Daycoval / ABC', tipo: 'LCA', taxa_cdi: 90.0, equivalente_cdb_cdi: 105.9, carencia: '9 meses', corretora: 'Rico', url_oferta: 'https://www.rico.com.vc/investimentos/renda-fixa/lci-e-lca/' },
+          { emissor: 'BTG Pactual / Inter', tipo: 'LCI', taxa_cdi: 92.0, equivalente_cdb_cdi: 108.2, carencia: '12 meses', corretora: 'XP', url_oferta: 'https://www.xpi.com.br/investimentos/renda-fixa/lci-lca/' },
+          { emissor: 'Banco Pine / Bari', tipo: 'LCI', taxa_cdi: 94.5, equivalente_cdb_cdi: 111.2, carencia: '24 meses', corretora: 'XP / Rico', url_oferta: 'https://www.xpi.com.br/investimentos/renda-fixa/lci-lca/' }
         ]
       };
 
@@ -1056,15 +1061,24 @@
       } catch (e) {}
 
       dataBadge.textContent = dados.atualizado_em;
-      tbody.innerHTML = dados.ofertas.map(o => `
-        <tr>
-          <td><strong>${o.emissor}</strong></td>
-          <td><span class="tag tag-blue">${o.tipo}</span></td>
-          <td><strong style="color: #059669;">${o.taxa_cdi.toFixed(1).replace('.', ',')}% CDI</strong></td>
-          <td>${o.equivalente_cdb_cdi.toFixed(1).replace('.', ',')}% CDI</td>
-          <td>${o.carencia}</td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = dados.ofertas.map(o => {
+        const link = o.url_oferta || 'https://www.xpi.com.br/investimentos/renda-fixa/lci-lca/';
+        const nomeCorretora = o.corretora || 'XP / Rico';
+        return `
+          <tr>
+            <td><strong>${o.emissor}</strong></td>
+            <td><span class="tag tag-blue">${o.tipo}</span></td>
+            <td><strong style="color: #059669;">${o.taxa_cdi.toFixed(1).replace('.', ',')}% CDI</strong></td>
+            <td>${o.equivalente_cdb_cdi.toFixed(1).replace('.', ',')}% CDI</td>
+            <td>${o.carencia}</td>
+            <td>
+              <a href="${link}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="text-decoration: none; white-space: nowrap;">
+                ${nomeCorretora} ↗
+              </a>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     // =========================================================
