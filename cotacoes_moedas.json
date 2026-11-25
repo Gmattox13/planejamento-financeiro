@@ -1,0 +1,73 @@
+{
+  "atualizado_em": "Base inicial",
+  "moedas": {
+    "USD": {
+      "codigo": "USD",
+      "nome": "Dólar",
+      "bandeira": "🇺🇸",
+      "valor": 5.80,
+      "variacao_15d_pct": 0.0,
+      "historico_15d": [
+        { "data": "D-14", "valor": 5.75 },
+        { "data": "D-12", "valor": 5.76 },
+        { "data": "D-10", "valor": 5.77 },
+        { "data": "D-8", "valor": 5.78 },
+        { "data": "D-6", "valor": 5.79 },
+        { "data": "D-4", "valor": 5.79 },
+        { "data": "D-2", "valor": 5.80 },
+        { "data": "Hoje", "valor": 5.80 }
+      ]
+    },
+    "EUR": {
+      "codigo": "EUR",
+      "nome": "Euro",
+      "bandeira": "🇪🇺",
+      "valor": 6.20,
+      "variacao_15d_pct": 0.0,
+      "historico_15d": [
+        { "data": "D-14", "valor": 6.14 },
+        { "data": "D-12", "valor": 6.15 },
+        { "data": "D-10", "valor": 6.16 },
+        { "data": "D-8", "valor": 6.17 },
+        { "data": "D-6", "valor": 6.18 },
+        { "data": "D-4", "valor": 6.19 },
+        { "data": "D-2", "valor": 6.19 },
+        { "data": "Hoje", "valor": 6.20 }
+      ]
+    },
+    "GBP": {
+      "codigo": "GBP",
+      "nome": "Libra Esterlina",
+      "bandeira": "🇬🇧",
+      "valor": 7.35,
+      "variacao_15d_pct": 0.0,
+      "historico_15d": [
+        { "data": "D-14", "valor": 7.28 },
+        { "data": "D-12", "valor": 7.29 },
+        { "data": "D-10", "valor": 7.31 },
+        { "data": "D-8", "valor": 7.32 },
+        { "data": "D-6", "valor": 7.33 },
+        { "data": "D-4", "valor": 7.34 },
+        { "data": "D-2", "valor": 7.34 },
+        { "data": "Hoje", "valor": 7.35 }
+      ]
+    },
+    "THB": {
+      "codigo": "THB",
+      "nome": "Thai Baht",
+      "bandeira": "🇹🇭",
+      "valor": 0.165,
+      "variacao_15d_pct": 0.0,
+      "historico_15d": [
+        { "data": "D-14", "valor": 0.162 },
+        { "data": "D-12", "valor": 0.163 },
+        { "data": "D-10", "valor": 0.163 },
+        { "data": "D-8", "valor": 0.164 },
+        { "data": "D-6", "valor": 0.164 },
+        { "data": "D-4", "valor": 0.164 },
+        { "data": "D-2", "valor": 0.165 },
+        { "data": "Hoje", "valor": 0.165 }
+      ]
+    }
+  }
+}
