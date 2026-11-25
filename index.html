@@ -411,6 +411,131 @@
         border: 2px solid #0f766e !important;
       }
     }
+    /* Robô Lateral de Moedas + Mini Gráfico 15 Dias */
+    .fx-toggle-btn {
+      position: fixed;
+      right: 14px;
+      bottom: 18px;
+      z-index: 950;
+      background: #0f172a;
+      color: #ffffff;
+      border: 1px solid #334155;
+      border-radius: 999px;
+      padding: 0.6rem 1rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25);
+      cursor: pointer;
+    }
+    .fx-sidebar {
+      position: fixed;
+      top: 118px;
+      right: 14px;
+      width: 265px;
+      max-height: calc(100vh - 140px);
+      overflow-y: auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 0.9rem;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
+      z-index: 900;
+    }
+    .fx-sidebar.collapsed {
+      display: none;
+    }
+    .fx-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.35rem;
+    }
+    .fx-header strong {
+      font-size: 0.88rem;
+      color: var(--text);
+    }
+    .fx-updated {
+      font-size: 0.72rem;
+      color: var(--text-light);
+      margin-bottom: 0.65rem;
+    }
+    .fx-item {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.45rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.5rem 0.65rem;
+      margin-bottom: 0.45rem;
+      cursor: pointer;
+      text-align: left;
+      transition: 0.15s ease;
+    }
+    .fx-item:hover, .fx-item.active {
+      border-color: var(--primary);
+      background: #f0fdfa;
+    }
+    .fx-left {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .fx-flag {
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+    .fx-code {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: var(--text);
+      display: block;
+    }
+    .fx-name {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      display: block;
+    }
+    .fx-right {
+      text-align: right;
+    }
+    .fx-val {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      display: block;
+    }
+    .fx-var {
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+    .fx-var.up { color: #059669; }
+    .fx-var.down { color: #dc2626; }
+    .fx-chart-box {
+      margin-top: 0.6rem;
+      padding-top: 0.65rem;
+      border-top: 1px dashed var(--border);
+    }
+    .fx-chart-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.4rem;
+    }
+    .fx-canvas-wrap {
+      position: relative;
+      height: 135px;
+      width: 100%;
+    }
+    @media (max-width: 1420px) {
+      .fx-sidebar {
+        top: auto;
+        bottom: 64px;
+        width: 280px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1521,7 +1646,139 @@
 
       buscarTaxasBCB();
       carregarVitrineLCI();
+      carregarMoedas15d();
     });
+    let moedaSelecionada = 'USD';
+
+    function alternarBarraMoedas() {
+      document.getElementById('fx-sidebar').classList.toggle('collapsed');
+    }
+
+    function formatarCotacaoBRL(valor) {
+      const casas = valor < 1 ? 4 : 2;
+      return valor.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+        minimumFractionDigits: casas,
+        maximumFractionDigits: casas
+      });
+    }
+
+    async function carregarMoedas15d() {
+      const atualizadoEl = document.getElementById('fx-atualizado');
+      const listaEl = document.getElementById('fx-lista');
+
+      let dados = null;
+      try {
+        const resp = await fetch('./cotacoes_moedas.json?v=' + Date.now());
+        if (resp.ok) {
+          dados = await resp.json();
+        }
+      } catch (e) {}
+
+      if (!dados || !dados.moedas) {
+        atualizadoEl.textContent = 'Aguardando dados do robô';
+        return;
+      }
+
+      atualizadoEl.textContent = `Atualizado: ${dados.atualizado_em}`;
+      const ordem = ['USD', 'EUR', 'GBP', 'THB'];
+
+      listaEl.innerHTML = ordem.map(cod => {
+        const m = dados.moedas[cod];
+        if (!m) return '';
+        const varNum = Number(m.variacao_15d_pct || 0);
+        const classeVar = varNum >= 0 ? 'up' : 'down';
+        const sinal = varNum > 0 ? '+' : '';
+        const ativa = cod === moedaSelecionada ? 'active' : '';
+
+        return `
+          <button type="button" class="fx-item ${ativa}" onclick="selecionarMoeda15d('${cod}')">
+            <div class="fx-left">
+              <span class="fx-flag">${m.bandeira}</span>
+              <div>
+                <span class="fx-code">${m.codigo}</span>
+                <span class="fx-name">${m.nome}</span>
+              </div>
+            </div>
+            <div class="fx-right">
+              <span class="fx-val">${formatarCotacaoBRL(Number(m.valor))}</span>
+              <span class="fx-var ${classeVar}">${sinal}${varNum.toFixed(2).replace('.', ',')}% (15d)</span>
+            </div>
+          </button>
+        `;
+      }).join('');
+
+      window.__dadosMoedas15d = dados.moedas;
+      renderizarGraficoMoeda15d(moedaSelecionada);
+    }
+
+    function selecionarMoeda15d(codigo) {
+      moedaSelecionada = codigo;
+      document.querySelectorAll('.fx-item').forEach(btn => btn.classList.remove('active'));
+      carregarMoedas15d();
+    }
+
+    function renderizarGraficoMoeda15d(codigo) {
+      const moedas = window.__dadosMoedas15d;
+      if (!moedas || !moedas[codigo]) return;
+
+      const moeda = moedas[codigo];
+      const hist = moeda.historico_15d || [];
+      document.getElementById('fx-grafico-titulo').textContent =
+        `${moeda.bandeira} ${moeda.codigo} (${moeda.nome}) — Últimos ${hist.length} registros`;
+
+      const labels = hist.map(p => p.data);
+      const valores = hist.map(p => Number(p.valor));
+
+      if (charts.moeda15d) charts.moeda15d.destroy();
+      charts.moeda15d = new Chart(document.getElementById('chartMoeda15d'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: `${moeda.codigo} em R$`,
+            data: valores,
+            borderColor: '#0f766e',
+            backgroundColor: 'rgba(15, 118, 110, 0.14)',
+            fill: true,
+            borderWidth: 2,
+            pointRadius: 2,
+            tension: 0.25
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { font: { size: 9 }, maxTicksLimit: 5 } },
+            y: { ticks: { font: { size: 9 } } }
+          }
+        }
+      });
+    }
   </script>
+  <!-- BOTÃO E BARRA LATERAL DE MOEDAS -->
+  <button type="button" class="fx-toggle-btn no-print" onclick="alternarBarraMoedas()" id="fx-toggle-btn">
+    💱 Moedas (15d)
+  </button>
+
+  <aside class="fx-sidebar no-print" id="fx-sidebar">
+    <div class="fx-header">
+      <strong>Câmbio &amp; 15 Dias</strong>
+      <button type="button" class="btn btn-outline btn-sm" onclick="alternarBarraMoedas()">✕</button>
+    </div>
+    <div class="fx-updated" id="fx-atualizado">Carregando cotações...</div>
+
+    <div id="fx-lista"></div>
+
+    <div class="fx-chart-box">
+      <div class="fx-chart-title" id="fx-grafico-titulo">Clique em uma moeda para ver 15 dias</div>
+      <div class="fx-canvas-wrap">
+        <canvas id="chartMoeda15d"></canvas>
+      </div>
+    </div>
+  </aside>
 </body>
 </html>
